@@ -1,1 +1,1 @@
-# crystalrohr
+run `git submodule update --init --recursive`
