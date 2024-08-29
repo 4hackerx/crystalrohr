@@ -1,7 +1,6 @@
 # Crystalrohr
+
 Decentralized Video Captioning Protocol Flow
-
-
 
 ### User Journey Flow
 
