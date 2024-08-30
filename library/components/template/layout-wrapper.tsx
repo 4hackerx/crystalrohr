@@ -20,7 +20,7 @@ const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
     <html lang="en">
       <body className={cn("flex w-screen", inter.className, lexend.variable)}>
         <RootProvider>
-          <div className="flex flex-col gap-2 w-full min-h-screen">
+          <div className="flex flex-col w-screen min-h-screen overflow-x-hidden">
             <Header />
             {children}
             <Footer />
