@@ -18,12 +18,11 @@ const lexend = Lexend({
 const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en">
-      <body className={cn("flex w-screen", inter.className, lexend.variable)}>
+      <body className={cn("flex w-full", inter.className, lexend.variable)}>
         <RootProvider>
-          <div className="flex flex-col gap-2 w-full min-h-screen">
+          <div className="flex flex-col w-full min-h-screen overflow-x-hidden">
             <Header />
             {children}
-            <Footer />
           </div>
         </RootProvider>
         <Toaster />
