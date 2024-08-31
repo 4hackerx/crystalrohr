@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-//deployed address for sepolia - 0xa7fF3208e70dD4BE58411F78269561453396AF5E
+//deployed address - 0x36F5837fca37b95D100589cE819cC3C12239748A
+
+// import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
@@ -52,15 +54,19 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
     uint256 public nextNodeId;
     uint256 public jobPrice;
     uint256 public nodeFee;
+    uint256 public totalStaked;
     uint256 public minStake;
+    uint256[] public nodeIds;
 
     mapping(uint256 => Video) public videos;
     mapping(uint256 => CaptioningJob) public jobs;
     mapping(uint256 => Node) public nodes;
+    mapping(address => uint256) public nodesThroughAddress;
     mapping(address => uint256) public pendingRewards;
     mapping(address => uint256[]) public userJobs;
     mapping(uint256 => uint256[]) public nodeJobs;
     mapping(uint256 => uint256) private vrfRequests;
+    mapping(uint256 => CaptioningJob) public disputedJobs;
 
     event VideoUploaded(uint256 indexed videoId, address indexed uploader, string ipfsHash, bool isEncrypted);
     event JobCreated(uint256 indexed jobId, uint256 indexed videoId, address indexed requester, JobType jobType);
@@ -73,6 +79,7 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
     event RewardsWithdrawn(address indexed node, uint256 amount);
     event PriceUpdated(uint256 newPrice);
     event NodeFeeUpdated(uint256 newFee);
+    event DisputeCreated(uint256 indexed jobId);
     event DisputeResolved(uint256 indexed jobId, bool infavorOfNode);
 
     constructor(
@@ -137,8 +144,13 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
     function registerNode() external payable returns (uint256 nodeId) {
         require(msg.value >= minStake, "Insufficient stake");
+        require(nodes[nodesThroughAddress[msg.sender]].isActive == false, "Node already registered");
+        require(tokenContract.transferFrom(msg.sender, address(this), minStake),"Stake Not Received");
         nodeId = nextNodeId++;
+        nodeIds.push(nodeId);
         nodes[nodeId] = Node(msg.sender, msg.value, true, false, 0, 0);
+        nodesThroughAddress[msg.sender] = nodeId;
+        totalStaked += msg.value;
         emit NodeRegistered(nodeId, msg.sender, msg.value, false);
     }
 
@@ -147,7 +159,8 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
         require(msg.sender == node.nodeAddress, "Not node owner");
         require(node.isActive, "Node already inactive");
         node.isActive = false;
-        payable(msg.sender).transfer(node.stake);
+        tokenContract.transferFrom(address(this),msg.sender,nodes[_nodeId].stake);
+        totalStaked -= nodes[_nodeId].stake;
         emit NodeDeactivated(_nodeId);
     }
 
@@ -164,15 +177,16 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
         return nodeJobs[_nodeId];
     }
 
-    function selectNode(uint256 _jobId,bool enableNativePayment) internal {
+      function selectNode(uint256 _jobId, bool enableNativePayment) internal {
         require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
+        require(totalStaked > 0, "No nodes staked");
         
         uint256 requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: keyHash,
                 subId: subscriptionId,
                 requestConfirmations: REQUEST_CONFIRMATIONS,
-                callbackGasLimit: 10000,
+                callbackGasLimit: 200000,
                 numWords: NUM_WORDS,
                 extraArgs: VRFV2PlusClient._argsToBytes(
                     VRFV2PlusClient.ExtraArgsV1({
@@ -190,22 +204,28 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
         uint256 jobId = vrfRequests[requestId];
-        require(jobId > 0, "Invalid request ID");
-        
-        uint256 randomNumber = randomWords[0];
-        uint256 selectedNodeId = (randomNumber % nextNodeId) + 1;
-        
-        while (!nodes[selectedNodeId].isActive && selectedNodeId < nextNodeId) {
-            selectedNodeId = (selectedNodeId + 1) % nextNodeId + 1;
+        require(jobs[jobId].status == JobStatus.Processing, "Job not processing");
+
+        uint256 randomValue = randomWords[0] % totalStaked;
+        Node memory selectedNode = selectNodeByStake(randomValue);
+
+        jobs[jobId].nodeId = nodesThroughAddress[selectedNode.nodeAddress];
+        jobs[jobId].status = JobStatus.Completed;
+
+        emit JobStatusUpdated(jobId, JobStatus.Completed);
+        emit NodeSelected(jobId, nodesThroughAddress[selectedNode.nodeAddress]);
+    }
+
+    function selectNodeByStake(uint256 randomValue ) internal view returns (Node memory selectedNode) {
+        uint256 cumulativeStake = 0;
+        for (uint i = 0; i < nodeIds.length; i++) {
+            Node memory node = nodes[i];
+            cumulativeStake += node.stake;
+            if (randomValue < cumulativeStake) {
+                return node;
+            }
         }
-        
-        require(nodes[selectedNodeId].isActive, "No active nodes available");
-        
-        jobs[jobId].nodeId = selectedNodeId;
-        nodeJobs[selectedNodeId].push(jobId);
-        emit NodeSelected(jobId, selectedNodeId);
-        
-        delete vrfRequests[requestId];
+        return nodes[nodeIds.length - 1]; // Fallback to last node if something goes wrong
     }
 
     function submitJobResult(uint256 _jobId, string calldata _resultIpfsHash) external {
@@ -250,19 +270,24 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
         return (nextVideoId, nextJobId, nextNodeId);
     }
 
-    function handleDispute(uint256 _jobId) external onlyOwner {
+    function createDispute(uint256 _jobId) external {
         CaptioningJob storage job = jobs[_jobId];
         require(job.status == JobStatus.Completed, "Job not completed");
-        
-        // This is a simplified dispute resolution. In a real-world scenario,
-        // this would involve a more complex process, possibly involving voting or arbitration.
-        bool infavorOfNode = true; // This should be determined through some dispute resolution process
-        
+        disputedJobs[_jobId] = job;
+        emit DisputeCreated(_jobId);
+    }
+
+    function handleDispute(uint256 _jobId, bool _infavour) external onlyOwner {
+        CaptioningJob storage job = jobs[_jobId];
+        require(job.status == JobStatus.Completed, "Job not completed");
+
+        bool infavorOfNode = _infavour; 
+
         if (!infavorOfNode) {
-            // If the dispute is resolved against the node, we could implement a slashing mechanism here
             nodes[job.nodeId].reputation--;
+            require(tokenContract.transferFrom(nodes[job.nodeId].nodeAddress,address(this),nodes[job.nodeId].stake));
         }
-        
+        delete disputedJobs[_jobId];
         emit DisputeResolved(_jobId, infavorOfNode);
     }
 }
