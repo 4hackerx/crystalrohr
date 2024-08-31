@@ -6,8 +6,8 @@ import { TextGenerateEffect } from "@/components/atoms/TextGenerate";
 import Link from "next/link";
 const page = () => {
   return (
-    <div className="h-screen  bg-gradient-to-r from-black to-[#550EFB] overflow-x-hidden">
-      <main className="container w-screen">
+    <div className="max-h-screen bg-gradient-to-r from-black to-[#550EFB] ">
+      <main className="container ">
           <section className="text-center h-screen flex items-center justify-center gap-3 flex-col">
             <h2 className="text-6xl font-bold text-white mb-4">
               Bring Clarity to Online Videos

@@ -1,7 +1,9 @@
-import React from 'react';
+"use client"
+import React, { useState } from 'react';
 import { User, Users } from 'lucide-react';
 
 const RoleSelectionPage = () => {
+    const [role, setRole]= useState("Client");
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
       <div className="absolute inset-0"></div>
@@ -23,7 +25,7 @@ const RoleSelectionPage = () => {
             <p className="text-gray-300 text-center">
               Craft immersive experiences and share your vision with the world.
             </p>
-            <button><a href="" className='text-blue-600'>Login</a></button>
+            <button onClick={()=>setRole('Client')} className='text-blue-600'>Login</button>
           </div>
         </div>
         <div className="flex-1 bg-gradient-to-r from-[#3f169e] to-[#550EFB] rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer group">
@@ -33,7 +35,7 @@ const RoleSelectionPage = () => {
             <p className="text-gray-300 text-center">
               Discover amazing content and embark on a journey through creativity.
             </p>
-            <button><a href="" className='text-blue-600'>Login</a></button>
+            <button onClick={()=>setRole('Node')}><a href="" className='text-blue-600'>Login</a></button>
           </div>
         </div>
       </div>
