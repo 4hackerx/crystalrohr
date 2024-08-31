@@ -13,7 +13,7 @@ const page = () => {
               Bring Clarity to Online Videos
               </h2>
             <p className="text-xl text-gray-400 mb-8">Make your content accessible to millions of visually impaired users</p>
-            <Link href="/Role" className="bg-blue-600 text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-blue-700 transition duration-300">Get Started</Link>
+            <Link href="/Login" className="bg-blue-600 text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-blue-700 transition duration-300">Get Started</Link>
           </section>
       </main>
     </div>

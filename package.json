@@ -9,6 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@web3auth/base": "^8.6.1",
+    "@web3auth/ethereum-provider": "^8.6.1",
+    "@web3auth/single-factor-auth": "^8.0.2",
+    "firebase": "^10.4.0",
+    "web3": "^4.1.1",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-checkbox": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.0",
