@@ -5,11 +5,24 @@ import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
 
 const VideoProcessingPage = () => {
+  type VideoDetails = {
+    totalWords: number;
+    totalLength: string;
+    totalScenes: number;
+    // Other properties...
+  };
   const [uploadProgress, setUploadProgress] = useState(0);
   const [translationProgress, setTranslationProgress] = useState(0);
-  const [videoDetails, setVideoDetails] = useState(null);
-  const [file, setFile]= useState(null);
+  const [videoDetails, setVideoDetails] = useState<VideoDetails>({
+    totalWords: 0,
+    totalLength: '',
+    totalScenes: 0,
+  });
+  
+  const [file, setFile]= useState<File|null>(null);
   const [Url, setURL] = useState("");
+
+ 
 
   const handleFileUpload = (event:any) => {
     const File = event.target.files[0];
