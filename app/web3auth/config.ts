@@ -6,7 +6,7 @@ if(typeof window != "undefined"){
 
     coreKitInstance  = new Web3AuthMPCCoreKit({ web3AuthClientId: "BAf-TMvY5A8y73hRyyj_GBRkUmd_Yz5bZ8sFvExZp9Zl40BzI8LBktJ2piFwoeP5HxMWoPG8yD23vYwRXtkHa8M",
         web3AuthNetwork: WEB3AUTH_NETWORK.DEVNET, manualSync: true, // This is the recommended approach
-        tssLib: tssLib, storage: window.localStorage,redirectPathName:"http://localhost:3000/user-dashboard" });
+        tssLib: tssLib, storage: window.localStorage });
 }
 
 export const verifierConfig = {
