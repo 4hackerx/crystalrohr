@@ -9,7 +9,7 @@ import core from "@/types/contracts/core-protocol";
 const CORE_ADDRESS = core.address as Address;
 const CORE_ABI = core.abi;
 
-export function useCaptionService() {
+export function useUserService() {
   const { address } = useAccount();
   const [videoId, setVideoId] = useState<bigint | null>(null);
   const [jobId, setJobId] = useState<bigint | null>(null);
