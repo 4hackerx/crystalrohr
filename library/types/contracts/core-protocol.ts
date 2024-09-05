@@ -630,7 +630,7 @@ const data = {
           type: "address",
         },
       ],
-      name: "getNodeByAddress",
+      name: "getNodeDetails",
       outputs: [
         {
           internalType: "uint256",
