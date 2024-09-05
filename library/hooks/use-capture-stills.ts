@@ -103,14 +103,19 @@ const useCaptureStills = () => {
   };
 
   const captureVideo = useCallback(async () => {
-    const video: HTMLVideoElement = videoRef.current;
-    const sliced: HTMLDivElement = slicedRef.current;
+    const video = videoRef.current;
+    const sliced = slicedRef.current;
+
+    if (!video || !sliced) {
+      throw new Error("No video or sliced ref");
+    }
+
     try {
       const { canvas, context, w, h } = _setUpCanvas(video);
 
       // clone full image on canvas.
       const clone = canvas.cloneNode(true) as HTMLCanvasElement;
-      clone.getContext("2d").drawImage(canvas, 0, 0);
+      clone.getContext("2d")?.drawImage(canvas, 0, 0);
 
       const col = 8;
       const row = 4;
@@ -119,7 +124,7 @@ const useCaptureStills = () => {
       const accumulatedColors: { r: number; g: number; b: number }[] = [];
 
       while (sliced.firstChild) {
-        sliced.removeChild(sliced.lastChild);
+        sliced.lastChild && sliced.removeChild(sliced.lastChild);
       }
 
       // sub divide image.
@@ -172,8 +177,12 @@ const useCaptureStills = () => {
   }, [ref, _compareColorSimilariy, _getAverageColor, _setUpCanvas]);
 
   const captureScene = useCallback(async () => {
-    const video: HTMLVideoElement = videoRef.current;
-    const scene: HTMLDivElement = sceneRef.current;
+    const video = videoRef.current;
+    const scene = sceneRef.current;
+
+    if (!video || !scene) {
+      throw new Error("No video or scene ref");
+    }
 
     try {
       const { canvas, context, w, h } = _setUpCanvas(video);
