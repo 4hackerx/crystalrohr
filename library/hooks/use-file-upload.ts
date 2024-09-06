@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { pinata } from "@/services/pinata";
 
-export const useFileUpload = () => {
+const useFileUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string>("");
   const [uploading, setUploading] = useState<boolean>(false);
@@ -40,3 +40,5 @@ export const useFileUpload = () => {
 
   return { file, url, uploading, uploadFile, handleChange };
 };
+
+export default useFileUpload;
