@@ -1,19 +1,18 @@
-import { getDefaultConfig } from "connectkit";
-import { createConfig, http } from "wagmi";
-import { anvil, baseSepolia } from "wagmi/chains";
+ // WAGMI Libraries
+import { WagmiProvider, createConfig, http, useAccount, useConnect, useDisconnect } from "wagmi";
+import { coinbaseWallet, walletConnect } from "wagmi/connectors";
+import { sepolia, mainnet, polygon } from "wagmi/chains";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query' 
+import Web3AuthConnectorInstance from "../../web3auth/config"
 
-export const config = createConfig(
-  getDefaultConfig({
-    appName: "Farlensflow",
-    walletConnectProjectId:
-      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
-    chains: [baseSepolia, anvil],
-    multiInjectedProviderDiscovery: true,
-    transports: {
-      [baseSepolia.id]: http(
-        `https://base-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
-      ),
-      [anvil.id]: http(),
-    },
-  }),
-);
+export const config = createConfig({
+  chains: [mainnet, sepolia, polygon],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+    [polygon.id]: http(),
+  },
+  connectors: [
+    Web3AuthConnectorInstance([mainnet, sepolia, polygon]),
+  ],
+});
