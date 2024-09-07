@@ -1,30 +1,23 @@
 "use client"
 import React from 'react'
-import {coreKitInstance, verifierConfig} from '../web3auth/config';
+import LoginButton from '../Components/LoginButton';
 
 const page = () => {
-  const login = async ()=>{
-      await coreKitInstance.loginWithOAuth(verifierConfig)
-      .then((data)=>console.log(data));
-  }
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <div className="max-w-5xl mx-auto flex flex-col items-center justify-center">
-        <h1 className="text-4xl font-bold mb-12 text-center">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#550EFB] to-[#360C99]">
-            Create User
-          </span>
+        <div className="w-screen min-h-screen flex flex-col items-center justify-start py-20 bg-black text-white px-4">
+      <div className="relative z-10 text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#3f169e] to-[#5211eb]">
+          Choose Your Role
         </h1>
+        <p className="text-xl text-gray-300">
+          Are you here to create or to explore the vast universe of content?
+        </p>
       </div>
-      <div className='w-full h-full flex py-10 justify-center gap-20'>
-        <div id="box" className='bg-[#550EFB] h-[20rem] w-[25rem] rounded-xl px-5 py-3 flex items-center justify-center' onClick={login}>
-            <span className='text-2xl text-white font-bold'>User</span>
-        </div>
-        <div id="box" className='bg-[#550EFB] h-[20rem] w-[25rem] rounded-xl px-5 py-3' onClick={login}>
-        <span className='text-2xl text-white font-bold'>Node</span>
-        </div>
+      <div className="flex flex-col md:flex-row gap-8 w-full max-w-4xl">
+        <LoginButton title="User" desc="Craft immersive experiences and share your vision with the world."/>
+        <LoginButton title="Node" desc="Discover amazing content and embark on a journey through creativity."/>
       </div>
-    </div>
+      </div>
   )
 }
 
