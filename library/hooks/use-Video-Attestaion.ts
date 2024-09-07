@@ -33,11 +33,16 @@ export const useVideoAttestation =async ()=>{
         return attestations;
     }
 
-    async function verifyAttestation(attestationId:string){
+    async function verifyAttestation(nodeAssigned:string,attestationId:string){
         const attestation = await indexer.queryAttestation(attestationId);
         if(!attestation){
             return "No attestations with this id";
         }
+        const {attester} = attestation;
+        if(attester===nodeAssigned){
+            return "Attestation is valid";
+        }
+        return "Invalid Attestation";
     }
 
     return{
