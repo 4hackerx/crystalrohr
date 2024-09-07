@@ -5,13 +5,10 @@ import { CardSpotlight } from "@/components/atoms/CardSpotlight";
 import { TextGenerateEffect } from "@/components/atoms/TextGenerate";
 
 import Link from "next/link";
-import { coreKitInstance } from "./web3auth/config";
-import Initializer from "./web3auth/Initializer";
 
 const page = () => {
   return (
     <>
-    <Initializer/>
     <div className="max-h-screen bg-gradient-to-r from-black to-[#550EFB] ">
       <main className="container ">
           <section className="text-center h-screen flex items-center justify-center gap-3 flex-col">

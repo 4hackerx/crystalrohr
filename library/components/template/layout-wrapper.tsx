@@ -7,6 +7,7 @@ import Footer from "@/components/organisms/footer";
 import Header from "@/components/organisms/header";
 import RootProvider from "@/providers";
 import { cn } from "@/utils";
+import NextTopLoader from "nextjs-toploader";
 
 const inter = Inter({ subsets: ["latin"], preload: true });
 const lexend = Lexend({
@@ -22,6 +23,13 @@ const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
         <RootProvider>
           <div className="flex flex-col w-full min-h-screen overflow-x-hidden">
             <Header />
+            <NextTopLoader
+              color="#550EFB"
+              height={3}
+              showSpinner={true}
+              speed={200}
+              shadow="0 0 10px #2299DD,0 0 5px #2299DD"
+            />
             {children}
           </div>
         </RootProvider>
