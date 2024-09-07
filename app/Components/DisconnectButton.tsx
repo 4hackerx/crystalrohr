@@ -6,7 +6,10 @@ const DisconnectButton = () => {
 
   return (
     <div>
-        <button className="bg-[#3A0CA5] text-white p-5 rounded-full" onClick={() => disconnect({connector:connectors[0]})}>Disconnect</button>
+        <button className="bg-[#3A0CA5] text-white p-5 rounded-full" onClick={() => {
+          disconnect({connector:connectors[0]})}
+          
+          }>Disconnect</button>
     </div>
   )
 }
