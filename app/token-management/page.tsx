@@ -1,8 +1,8 @@
 "use client"
 import React, { useState } from 'react';
 import { Coins, ShoppingCart, CreditCard, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+
+import { Button } from '@/components/atoms/button';
 
 const TokenManagementPage = () => {
   const [totalTokens, setTotalTokens] = useState(1000);

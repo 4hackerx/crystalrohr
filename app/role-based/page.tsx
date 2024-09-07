@@ -1,6 +1,8 @@
 "use client"
+
 import React from 'react'
-import LoginButton from '../Components/LoginButton';
+
+import LoginButton from '@/components/molecules/login-button'
 
 const page = () => {
   return (
