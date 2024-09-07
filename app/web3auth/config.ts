@@ -16,4 +16,3 @@ export const verifierConfig = {
       clientId: "97655760426-ahm01c10i9arv4orohdpgrljdi7dshk6.apps.googleusercontent.com"
     },
   } as SubVerifierDetailsParams;
-

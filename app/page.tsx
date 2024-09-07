@@ -11,7 +11,7 @@ import Initializer from "./web3auth/Initializer";
 const page = () => {
   return (
     <>
-    <Initializer/>
+
     <div className="max-h-screen bg-gradient-to-r from-black to-[#550EFB] ">
       <main className="container ">
           <section className="text-center h-screen flex items-center justify-center gap-3 flex-col">

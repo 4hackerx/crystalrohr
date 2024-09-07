@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Upload, UploadCloud, RefreshCw, ChevronRight, Play, Clock, Layers, Divide, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
+import { coreKitInstance} from '../web3auth/config';
 
 const VideoProcessingPage = () => {
   type VideoDetails = {
@@ -11,6 +12,7 @@ const VideoProcessingPage = () => {
     totalScenes: number;
     // Other properties...
   };
+
   const [uploadProgress, setUploadProgress] = useState(0);
   const [translationProgress, setTranslationProgress] = useState(0);
   const [videoDetails, setVideoDetails] = useState<VideoDetails>({
