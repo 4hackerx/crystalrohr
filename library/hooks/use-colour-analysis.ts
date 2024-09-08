@@ -42,9 +42,6 @@ const useColourAnalysis = () => {
 
       const average = difference.reduce((a, b) => a + b, 0) / difference.length;
 
-      console.log(difference);
-      console.log(average);
-
       return {
         similar: average <= 2,
         newColors: accumulatedColors,
