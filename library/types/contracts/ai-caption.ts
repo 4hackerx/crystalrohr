@@ -5,60 +5,17 @@ const data = {
     {
       inputs: [
         {
-          internalType: "address",
-          name: "initialOracleAddress",
-          type: "address",
-        },
-      ],
-      stateMutability: "nonpayable",
-      type: "constructor",
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: true,
-          internalType: "address",
-          name: "owner",
-          type: "address",
-        },
-        {
-          indexed: true,
-          internalType: "uint256",
-          name: "jobId",
-          type: "uint256",
-        },
-      ],
-      name: "CaptioningJobCreated",
-      type: "event",
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: true,
-          internalType: "address",
-          name: "newOracleAddress",
-          type: "address",
-        },
-      ],
-      name: "OracleAddressUpdated",
-      type: "event",
-    },
-    {
-      inputs: [
-        {
           internalType: "string",
-          name: "caption",
+          name: "message",
           type: "string",
         },
         {
           internalType: "uint256",
-          name: "jobId",
+          name: "runId",
           type: "uint256",
         },
       ],
-      name: "addCaption",
+      name: "addMessage",
       outputs: [],
       stateMutability: "nonpayable",
       type: "function",
@@ -67,69 +24,7 @@ const data = {
       inputs: [
         {
           internalType: "uint256",
-          name: "",
-          type: "uint256",
-        },
-      ],
-      name: "captioningJobs",
-      outputs: [
-        {
-          internalType: "address",
-          name: "owner",
-          type: "address",
-        },
-      ],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        {
-          internalType: "uint256",
-          name: "jobId",
-          type: "uint256",
-        },
-      ],
-      name: "getCaptionHistory",
-      outputs: [
-        {
-          components: [
-            {
-              internalType: "string",
-              name: "role",
-              type: "string",
-            },
-            {
-              components: [
-                {
-                  internalType: "string",
-                  name: "contentType",
-                  type: "string",
-                },
-                {
-                  internalType: "string",
-                  name: "value",
-                  type: "string",
-                },
-              ],
-              internalType: "struct IOracle.Content[]",
-              name: "content",
-              type: "tuple[]",
-            },
-          ],
-          internalType: "struct IOracle.Message[]",
-          name: "",
-          type: "tuple[]",
-        },
-      ],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        {
-          internalType: "uint256",
-          name: "jobId",
+          name: "runId",
           type: "uint256",
         },
         {
@@ -200,23 +95,53 @@ const data = {
           type: "string",
         },
       ],
-      name: "onOracleCaptionResponse",
+      name: "onOracleOpenAiLlmResponse",
       outputs: [],
       stateMutability: "nonpayable",
       type: "function",
     },
     {
-      inputs: [],
-      name: "oracleAddress",
-      outputs: [
+      inputs: [
         {
           internalType: "address",
-          name: "",
+          name: "initialOracleAddress",
           type: "address",
         },
       ],
-      stateMutability: "view",
-      type: "function",
+      stateMutability: "nonpayable",
+      type: "constructor",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: "address",
+          name: "owner",
+          type: "address",
+        },
+        {
+          indexed: true,
+          internalType: "uint256",
+          name: "chatId",
+          type: "uint256",
+        },
+      ],
+      name: "ChatCreated",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: "address",
+          name: "newOracleAddress",
+          type: "address",
+        },
+      ],
+      name: "OracleAddressUpdated",
+      type: "event",
     },
     {
       inputs: [
@@ -235,7 +160,7 @@ const data = {
       inputs: [
         {
           internalType: "string",
-          name: "videoUrl",
+          name: "message",
           type: "string",
         },
         {
@@ -244,7 +169,7 @@ const data = {
           type: "string[]",
         },
       ],
-      name: "startCaption",
+      name: "startChat",
       outputs: [
         {
           internalType: "uint256",
@@ -263,17 +188,12 @@ const data = {
           type: "uint256",
         },
       ],
-      name: "storedContents",
+      name: "chatRuns",
       outputs: [
         {
-          internalType: "string",
-          name: "contentType",
-          type: "string",
-        },
-        {
-          internalType: "string",
-          name: "value",
-          type: "string",
+          internalType: "address",
+          name: "owner",
+          type: "address",
         },
       ],
       stateMutability: "view",
@@ -283,16 +203,53 @@ const data = {
       inputs: [
         {
           internalType: "uint256",
-          name: "",
+          name: "chatId",
           type: "uint256",
         },
       ],
-      name: "storedMessages",
+      name: "getMessageHistory",
       outputs: [
         {
-          internalType: "string",
-          name: "role",
-          type: "string",
+          components: [
+            {
+              internalType: "string",
+              name: "role",
+              type: "string",
+            },
+            {
+              components: [
+                {
+                  internalType: "string",
+                  name: "contentType",
+                  type: "string",
+                },
+                {
+                  internalType: "string",
+                  name: "value",
+                  type: "string",
+                },
+              ],
+              internalType: "struct OpenAiChatGptVision.Content[]",
+              name: "content",
+              type: "tuple[]",
+            },
+          ],
+          internalType: "struct OpenAiChatGptVision.Message[]",
+          name: "",
+          type: "tuple[]",
+        },
+      ],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [],
+      name: "oracleAddress",
+      outputs: [
+        {
+          internalType: "address",
+          name: "",
+          type: "address",
         },
       ],
       stateMutability: "view",
