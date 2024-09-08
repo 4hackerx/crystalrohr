@@ -43,11 +43,12 @@ contract CoreContract is ReentrancyGuard,Ownable {
 
     IERC20 public tokenContract;
     IVRF public vrfContract;
+    
     bytes32 private immutable keyHash;
     uint256 private immutable subscriptionId;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
-
+    
     uint256 public nextVideoId;
     uint256 public nextJobId;
     uint256 public nextNodeId;
@@ -82,8 +83,10 @@ contract CoreContract is ReentrancyGuard,Ownable {
     event DisputeResolved(uint256 indexed jobId, bool infavorOfNode);
 
     constructor(
-       address _tokenAddress
+       address _tokenAddress,
+       address _vrfContractAddress
     ) Ownable(msg.sender){
+        vrfContract = IVRF(_vrfContractAddress);
         tokenContract = IERC20(_tokenAddress);
         jobPrice = 100 * 10**18; // 100 tokens
         nodeFee = 80; // 80%
@@ -101,7 +104,7 @@ contract CoreContract is ReentrancyGuard,Ownable {
         return (video.ipfsHash, video.duration, video.uploader, video.isEncrypted);
     }
 
-    function createJob(uint256 _videoId, JobType _jobType,address _vrfContractAddress) external nonReentrant returns (uint256 jobId) {
+    function createJob(uint256 _videoId, JobType _jobType) external nonReentrant returns (uint256 jobId) {
         require(tokenContract.transferFrom(msg.sender, address(this), jobPrice), "Payment failed");
         
         jobId = nextJobId++;
@@ -110,7 +113,7 @@ contract CoreContract is ReentrancyGuard,Ownable {
         emit JobCreated(jobId, _videoId, msg.sender, _jobType);
 
         // Request a random number to select a node
-        selectNode(jobId,_vrfContractAddress);
+        selectNode(jobId);
         emit JobStatusUpdated(jobId, JobStatus.Processing);
         emit JobCreated(jobId, _videoId, msg.sender, _jobType);
     }
@@ -171,22 +174,39 @@ contract CoreContract is ReentrancyGuard,Ownable {
         return nodeJobs[_nodeId];
     }
 
-  function selectNode(uint256 _jobId,address _vrfContractAddress) internal {
-        vrfContract = IVRF(_vrfContractAddress);
-        require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
-        require(totalStaked > 0, "No nodes staked");
-        
-        uint256 requestId = vrfContract.requestRandomWords(1);
-        vrfRequests[requestId] = _jobId;
-        
-        jobs[_jobId].status = JobStatus.Processing;
-        emit JobStatusUpdated(_jobId, JobStatus.Processing);
+  function selectNode(uint256 _jobId) internal {
+     
+       
+    require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
+    require(totalStaked > 0, "No nodes staked");
+    
+    uint256 requestId = vrfContract.requestRandomWords(1);
+    vrfRequests[requestId] = _jobId;
+    
+    jobs[_jobId].status = JobStatus.Processing;
+    emit JobStatusUpdated(_jobId, JobStatus.Processing);
 
-        // Check if the request was immediately fulfilled (for AlternativeVRF)
-        (bool fulfilled, ) = vrfContract.getRequestStatus(requestId);
-        if (fulfilled) {
-            fulfillRandomness(_jobId);
-        }
+    // Check if the request was immediately fulfilled (for non-Chainlink implementation)
+    (bool fulfilled, ) = vrfContract.getRequestStatus(requestId);
+    if (fulfilled) {
+        fulfillRandomness(_jobId);
+    
+}
+
+        // require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
+        // require(totalStaked > 0, "No nodes staked");
+        
+        // uint256 requestId = vrfContract.requestRandomWords(1);
+        // vrfRequests[requestId] = _jobId;
+        
+        // jobs[_jobId].status = JobStatus.Processing;
+        // emit JobStatusUpdated(_jobId, JobStatus.Processing);
+
+        // // Check if the request was immediately fulfilled (for AlternativeVRF)
+        // (bool fulfilled, ) = vrfContract.getRequestStatus(requestId);
+        // if (fulfilled) {
+        //     fulfillRandomness(_jobId);
+        // }
     }
 
     function fulfillRandomness(uint256 _jobId) public {
@@ -201,7 +221,7 @@ contract CoreContract is ReentrancyGuard,Ownable {
         jobs[_jobId].nodeId = nodesThroughAddress[selectedNode.nodeAddress];
         jobs[_jobId].status = JobStatus.Completed;
 
-        emit JobStatusUpdated(_jobId, JobStatus.Completed);
+        emit JobStatusUpdated(_jobId, JobStatus.Processing);
         emit NodeSelected(_jobId, nodesThroughAddress[selectedNode.nodeAddress]);
     }
 
