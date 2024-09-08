@@ -13,12 +13,12 @@ export default function Web3AuthConnectorInstance(chains: Chain[]) {
 
   const chainConfig = {
     chainNamespace: CHAIN_NAMESPACES.EIP155,
-    chainId: "0x" + chains[3].id.toString(16),
-    rpcTarget: chains[3].rpcUrls.default.http[0], // This is the public RPC we have added, please pass on your own endpoint while creating an app
-    displayName: chains[3].name,
-    tickerName: chains[3].nativeCurrency?.name,
-    ticker: chains[3].nativeCurrency?.symbol,
-    blockExplorerUrl: chains[3].blockExplorers?.default.url[0] as string,
+    chainId: "0x" + chains[0].id.toString(16),
+    rpcTarget: chains[0].rpcUrls.default.http[0], // This is the public RPC we have added, please pass on your own endpoint while creating an app
+    displayName: chains[0].name,
+    tickerName: chains[0].nativeCurrency?.name,
+    ticker: chains[0].nativeCurrency?.symbol,
+    blockExplorerUrl: chains[0].blockExplorers?.default.url[0] as string,
   };
 
   const privateKeyProvider = new EthereumPrivateKeyProvider({ config: { chainConfig } });

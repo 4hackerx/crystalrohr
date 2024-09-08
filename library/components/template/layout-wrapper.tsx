@@ -8,6 +8,8 @@ import Header from "@/components/organisms/header";
 import RootProvider from "@/providers";
 import { cn } from "@/utils";
 import NextTopLoader from "nextjs-toploader";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const inter = Inter({ subsets: ["latin"], preload: true });
 const lexend = Lexend({
@@ -30,6 +32,7 @@ const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
               speed={200}
               shadow="0 0 10px #2299DD,0 0 5px #2299DD"
             />
+            <ToastContainer/>
             {children}
           </div>
         </RootProvider>
