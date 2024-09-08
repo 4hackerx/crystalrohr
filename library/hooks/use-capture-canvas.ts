@@ -23,8 +23,6 @@ const useCaptureCanvas = (videoRef: React.RefObject<HTMLVideoElement>) => {
     canvas.width = w;
     canvas.height = h;
 
-    console.log(w, h);
-
     context.fillRect(0, 0, w, h);
     context.drawImage(video, 0, 0, w, h);
 

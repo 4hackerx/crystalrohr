@@ -1,6 +1,11 @@
 import { useCallback, useState } from "react";
 import { Address, decodeEventLog } from "viem";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import {
+  useAccount,
+  useReadContract,
+  useWatchContractEvent,
+  useWriteContract,
+} from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 
 import { config } from "@/providers/wagmi/config";
@@ -12,6 +17,8 @@ const CORE_ABI = core.abi;
 export function useNodeService() {
   const { address } = useAccount();
   const [nodeId, setNodeId] = useState<bigint | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<bigint | null>(null);
+  const [newJobAssignments, setNewJobAssignments] = useState<bigint[]>([]);
 
   const { writeContract: writeRegisterNode } = useWriteContract();
   const { writeContract: writeDeactivateNode } = useWriteContract();
@@ -38,6 +45,39 @@ export function useNodeService() {
       enabled: !!address,
     },
   });
+
+  const { data: jobDetails, refetch: refetchJobDetails } = useReadContract({
+    address: CORE_ADDRESS,
+    abi: CORE_ABI,
+    functionName: "getJobDetails",
+    args: [selectedJobId!],
+    query: {
+      enabled: !!selectedJobId,
+    },
+  });
+
+  useWatchContractEvent({
+    address: CORE_ADDRESS,
+    abi: CORE_ABI,
+    eventName: "NodeSelected",
+    onLogs(logs) {
+      logs.forEach((log) => {
+        const { jobId, nodeId: assignedNodeId } = log.args;
+        if (jobId && assignedNodeId) {
+          handleNewJobAssignment(jobId, assignedNodeId);
+        }
+      });
+    },
+  });
+
+  const handleNewJobAssignment = useCallback(
+    (jobId: bigint, assignedNodeId: bigint) => {
+      if (assignedNodeId === nodeId) {
+        setNewJobAssignments((prev) => [...prev, jobId]);
+      }
+    },
+    [nodeId]
+  );
 
   const registerNode = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -258,15 +298,38 @@ export function useNodeService() {
     [refetchNodeDetails, nodeDetails]
   );
 
+  const getJobDetails = useCallback(
+    async (jobId: bigint) => {
+      setSelectedJobId(jobId);
+      await refetchJobDetails();
+      if (jobDetails) {
+        return {
+          videoId: jobDetails.videoId,
+          requester: jobDetails.requester,
+          nodeId: jobDetails.nodeId,
+          status: jobDetails.status,
+          jobType: jobDetails.jobType,
+          creationTime: jobDetails.creationTime,
+          resultIpfsHash: jobDetails.resultIpfsHash,
+          price: jobDetails.price,
+        };
+      }
+      return null;
+    },
+    [refetchJobDetails, jobDetails]
+  );
+
   return {
     registerNode,
     deactivateNode,
     getNodeJobs,
     getNodeDetails,
+    getJobDetails,
     submitJobResult,
     distributeRewards,
     withdrawRewards,
     nodeId,
     setNodeId,
+    newJobAssignments,
   };
 }
