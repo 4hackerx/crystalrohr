@@ -1,36 +1,28 @@
-// SPDX-License-Identifier: MIT
-//deployed address : 0x72307c0AA4319792AE78f8b12Dc730ECfADf450e
-
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.9;
 
 import "./interfaces/IOracle.sol";
 
-contract VideoCaptioningService {
-
-    struct CaptioningJob {
-        address owner;
-        uint[] messageIds;
-    }
-
-    struct StoredMessage {
-        string role;
-        uint[] contentIds;
-    }
-
-    struct StoredContent {
+contract OpenAiChatGptVision {
+    struct Content {
         string contentType;
         string value;
     }
 
-    mapping(uint => CaptioningJob) public captioningJobs;
-    mapping(uint => StoredMessage) public storedMessages;
-    mapping(uint => StoredContent) public storedContents;
+    struct Message {
+        string role;
+        Content[] content;
+    }
 
-    uint private jobCount;
-    uint private messageCount;
-    uint private contentCount;
+    struct ChatRun {
+        address owner;
+        Message[] messages;
+    }
 
-    event CaptioningJobCreated(address indexed owner, uint indexed jobId);
+    mapping(uint => ChatRun) public chatRuns;
+    uint private chatRunsCount;
+
+    event ChatCreated(address indexed owner, uint indexed chatId);
 
     address private owner;
     address public oracleAddress;
@@ -42,12 +34,10 @@ contract VideoCaptioningService {
     constructor(address initialOracleAddress) {
         owner = msg.sender;
         oracleAddress = initialOracleAddress;
-        jobCount = 0;
-        messageCount = 0;
-        contentCount = 0;
+        chatRunsCount = 0;
 
         config = IOracle.OpenAiRequest({
-            model: "gpt-4-vision-preview",
+            model: "gpt-4-turbo",
             frequencyPenalty: 21,
             logitBias: "",
             maxTokens: 1000,
@@ -78,95 +68,69 @@ contract VideoCaptioningService {
         emit OracleAddressUpdated(newOracleAddress);
     }
 
-    function startCaption(string memory videoUrl, string[] memory imageUrls) public returns (uint) {
-        uint currentJobId = jobCount++;
-        CaptioningJob storage job = captioningJobs[currentJobId];
-        job.owner = msg.sender;
+    function startChat(string memory message, string[] memory imageUrls) public returns (uint) {
+        uint currentId = chatRunsCount;
+        chatRunsCount++;
 
-        uint currentMessageId = messageCount++;
-        StoredMessage storage newMessage = storedMessages[currentMessageId];
+        ChatRun storage run = chatRuns[currentId];
+        run.owner = msg.sender;
+
+        Message storage newMessage = run.messages.push();
         newMessage.role = "user";
 
-        // Store video URL content
-        uint videoContentId = contentCount++;
-        storedContents[videoContentId] = StoredContent("text", videoUrl);
-        newMessage.contentIds.push(videoContentId);
+        Content storage textContent = newMessage.content.push();
+        textContent.contentType = "text";
+        textContent.value = message;
 
-        // Store image URLs content
-        for (uint i = 0; i < imageUrls.length; i++) {
-            uint imageContentId = contentCount++;
-            storedContents[imageContentId] = StoredContent("image_url", imageUrls[i]);
-            newMessage.contentIds.push(imageContentId);
+        for (uint u = 0; u < imageUrls.length; u++) {
+            Content storage imageContent = newMessage.content.push();
+            imageContent.contentType = "image_url";
+            imageContent.value = imageUrls[u];
         }
 
-        job.messageIds.push(currentMessageId);
+        IOracle(oracleAddress).createOpenAiLlmCall(currentId, config);
+        emit ChatCreated(msg.sender, currentId);
 
-        IOracle(oracleAddress).createOpenAiLlmCall(currentJobId, config);
-        emit CaptioningJobCreated(msg.sender, currentJobId);
-
-        return currentJobId;
+        return currentId;
     }
 
-    function onOracleCaptionResponse(
-        uint jobId,
+    function onOracleOpenAiLlmResponse(
+        uint runId,
         IOracle.OpenAiResponse memory response,
         string memory errorMessage
     ) public onlyOracle {
-        CaptioningJob storage job = captioningJobs[jobId];
-        require(job.messageIds.length > 0, "No previous message");
+        ChatRun storage run = chatRuns[runId];
+        require(run.messages.length > 0 && keccak256(abi.encodePacked(run.messages[run.messages.length - 1].role)) == keccak256(abi.encodePacked("user")),
+            "No message to respond to"
+        );
 
-        uint lastMessageId = job.messageIds[job.messageIds.length - 1];
-        require(keccak256(abi.encodePacked(storedMessages[lastMessageId].role)) == keccak256(abi.encodePacked("user")), "Last message not from user");
-
-        uint currentMessageId = messageCount++;
-        StoredMessage storage newMessage = storedMessages[currentMessageId];
+        Message storage newMessage = run.messages.push();
         newMessage.role = "assistant";
 
-        uint contentId = contentCount++;
-        storedContents[contentId] = StoredContent("text", compareStrings(errorMessage, "") ? response.content : errorMessage);
-        newMessage.contentIds.push(contentId);
-
-        job.messageIds.push(currentMessageId);
+        Content storage content = newMessage.content.push();
+        content.contentType = "text";
+        content.value = !compareStrings(errorMessage, "") ? errorMessage : response.content;
     }
 
-    function addCaption(string memory caption, uint jobId) public {
-        CaptioningJob storage job = captioningJobs[jobId];
-        require(job.messageIds.length > 0, "No previous message");
-        require(job.owner == msg.sender, "Only job owner can add captions");
+    function addMessage(string memory message, uint runId) public {
+        ChatRun storage run = chatRuns[runId];
+        require(run.messages.length > 0 && keccak256(abi.encodePacked(run.messages[run.messages.length - 1].role)) == keccak256(abi.encodePacked("assistant")),
+            "No response to previous message"
+        );
+        require(run.owner == msg.sender, "Only chat owner can add messages");
 
-        uint lastMessageId = job.messageIds[job.messageIds.length - 1];
-        require(keccak256(abi.encodePacked(storedMessages[lastMessageId].role)) == keccak256(abi.encodePacked("assistant")), "No response to previous caption");
-
-        uint currentMessageId = messageCount++;
-        StoredMessage storage newMessage = storedMessages[currentMessageId];
+        Message storage newMessage = run.messages.push();
         newMessage.role = "user";
 
-        uint contentId = contentCount++;
-        storedContents[contentId] = StoredContent("text", caption);
-        newMessage.contentIds.push(contentId);
+        Content storage content = newMessage.content.push();
+        content.contentType = "text";
+        content.value = message;
 
-        job.messageIds.push(currentMessageId);
-
-        IOracle(oracleAddress).createOpenAiLlmCall(jobId, config);
+        IOracle(oracleAddress).createOpenAiLlmCall(runId, config);
     }
 
-    function getCaptionHistory(uint jobId) public view returns (IOracle.Message[] memory) {
-        CaptioningJob storage job = captioningJobs[jobId];
-        IOracle.Message[] memory messages = new IOracle.Message[](job.messageIds.length);
-
-        for (uint i = 0; i < job.messageIds.length; i++) {
-            StoredMessage storage storedMsg = storedMessages[job.messageIds[i]];
-            IOracle.Content[] memory contents = new IOracle.Content[](storedMsg.contentIds.length);
-
-            for (uint j = 0; j < storedMsg.contentIds.length; j++) {
-                StoredContent storage storedContent = storedContents[storedMsg.contentIds[j]];
-                contents[j] = IOracle.Content(storedContent.contentType, storedContent.value);
-            }
-
-            messages[i] = IOracle.Message(storedMsg.role, contents);
-        }
-
-        return messages;
+    function getMessageHistory(uint chatId) public view returns (Message[] memory) {
+        return chatRuns[chatId].messages;
     }
 
     function compareStrings(string memory a, string memory b) private pure returns (bool) {
