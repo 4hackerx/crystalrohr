@@ -6,7 +6,7 @@ const useFileUpload = () => {
   const [url, setUrl] = useState<string>("");
   const [uploading, setUploading] = useState<boolean>(false);
 
-  const uploadFile = async () => {
+  const uploadFile = async (): Promise<string | void> => {
     if (!file) {
       return;
     }
@@ -26,11 +26,12 @@ const useFileUpload = () => {
       });
       const url = await urlRequest.json();
       setUrl(url);
-      setUploading(false);
+      return url;
     } catch (e) {
       console.log(e);
-      setUploading(false);
       alert("Trouble uploading file");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -38,7 +39,7 @@ const useFileUpload = () => {
     setFile(e.target.files?.[0] || null);
   };
 
-  return { file, url, uploading, uploadFile, handleChange };
+  return { file, setFile, url, setUrl, uploading, uploadFile, handleChange };
 };
 
 export default useFileUpload;
