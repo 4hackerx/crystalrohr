@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-//deployed address - 0x36F5837fca37b95D100589cE819cC3C12239748A
-
 // import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {VRFConsumerBaseV2Plus} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
-import {VRFV2PlusClient} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+// import {VRFConsumerBaseV2Plus} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+// import {VRFV2PlusClient} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IVRF.sol";
 
-
-contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
+contract CoreContract is ReentrancyGuard,Ownable {
     enum JobStatus { Pending, Processing, Completed, Cancelled }
     enum JobType { Regular, Encrypted }
 
@@ -43,12 +42,13 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     IERC20 public tokenContract;
-
+    IVRF public vrfContract;
+    
     bytes32 private immutable keyHash;
     uint256 private immutable subscriptionId;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
-
+    
     uint256 public nextVideoId;
     uint256 public nextJobId;
     uint256 public nextNodeId;
@@ -83,14 +83,11 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
     event DisputeResolved(uint256 indexed jobId, bool infavorOfNode);
 
     constructor(
-        address _tokenAddress,
-        address _vrfCoordinator,
-        bytes32 _keyHash,
-        uint256 _subscriptionId
-    ) VRFConsumerBaseV2Plus(_vrfCoordinator) {
+       address _tokenAddress,
+       address _vrfContractAddress
+    ) Ownable(msg.sender){
+        vrfContract = IVRF(_vrfContractAddress);
         tokenContract = IERC20(_tokenAddress);
-        keyHash = _keyHash;
-        subscriptionId = _subscriptionId;
         jobPrice = 100 * 10**18; // 100 tokens
         nodeFee = 80; // 80%
         minStake = 1000 * 10**18; // 1000 tokens
@@ -116,7 +113,7 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
         emit JobCreated(jobId, _videoId, msg.sender, _jobType);
 
         // Request a random number to select a node
-        selectNode(jobId,true);
+        selectNode(jobId);
         emit JobStatusUpdated(jobId, JobStatus.Processing);
         emit JobCreated(jobId, _videoId, msg.sender, _jobType);
     }
@@ -177,43 +174,55 @@ contract CoreContract is ReentrancyGuard, VRFConsumerBaseV2Plus {
         return nodeJobs[_nodeId];
     }
 
-      function selectNode(uint256 _jobId, bool enableNativePayment) internal {
-        require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
-        require(totalStaked > 0, "No nodes staked");
+  function selectNode(uint256 _jobId) internal {
+     
+       
+    require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
+    require(totalStaked > 0, "No nodes staked");
+    
+    uint256 requestId = vrfContract.requestRandomWords(1);
+    vrfRequests[requestId] = _jobId;
+    
+    jobs[_jobId].status = JobStatus.Processing;
+    emit JobStatusUpdated(_jobId, JobStatus.Processing);
+
+    // Check if the request was immediately fulfilled (for non-Chainlink implementation)
+    (bool fulfilled, ) = vrfContract.getRequestStatus(requestId);
+    if (fulfilled) {
+        fulfillRandomness(_jobId);
+    
+}
+
+        // require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
+        // require(totalStaked > 0, "No nodes staked");
         
-        uint256 requestId = s_vrfCoordinator.requestRandomWords(
-            VRFV2PlusClient.RandomWordsRequest({
-                keyHash: keyHash,
-                subId: subscriptionId,
-                requestConfirmations: REQUEST_CONFIRMATIONS,
-                callbackGasLimit: 200000,
-                numWords: NUM_WORDS,
-                extraArgs: VRFV2PlusClient._argsToBytes(
-                    VRFV2PlusClient.ExtraArgsV1({
-                        nativePayment: enableNativePayment
-                    })
-                )
-            })
-        );
+        // uint256 requestId = vrfContract.requestRandomWords(1);
+        // vrfRequests[requestId] = _jobId;
         
-        vrfRequests[requestId] = _jobId;
-        
-        jobs[_jobId].status = JobStatus.Processing;
-        emit JobStatusUpdated(_jobId, JobStatus.Processing);
+        // jobs[_jobId].status = JobStatus.Processing;
+        // emit JobStatusUpdated(_jobId, JobStatus.Processing);
+
+        // // Check if the request was immediately fulfilled (for AlternativeVRF)
+        // (bool fulfilled, ) = vrfContract.getRequestStatus(requestId);
+        // if (fulfilled) {
+        //     fulfillRandomness(_jobId);
+        // }
     }
 
-    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
-        uint256 jobId = vrfRequests[requestId];
-        require(jobs[jobId].status == JobStatus.Processing, "Job not processing");
+    function fulfillRandomness(uint256 _jobId) public {
+        uint256 requestId = vrfRequests[_jobId];
+        (bool fulfilled, uint256[] memory randomWords) = vrfContract.getRequestStatus(requestId);
+        require(fulfilled, "Random number not yet available");
+        require(jobs[_jobId].status == JobStatus.Processing, "Job not processing");
 
         uint256 randomValue = randomWords[0] % totalStaked;
         Node memory selectedNode = selectNodeByStake(randomValue);
 
-        jobs[jobId].nodeId = nodesThroughAddress[selectedNode.nodeAddress];
-        jobs[jobId].status = JobStatus.Completed;
+        jobs[_jobId].nodeId = nodesThroughAddress[selectedNode.nodeAddress];
+        jobs[_jobId].status = JobStatus.Completed;
 
-        emit JobStatusUpdated(jobId, JobStatus.Completed);
-        emit NodeSelected(jobId, nodesThroughAddress[selectedNode.nodeAddress]);
+        emit JobStatusUpdated(_jobId, JobStatus.Processing);
+        emit NodeSelected(_jobId, nodesThroughAddress[selectedNode.nodeAddress]);
     }
 
     function selectNodeByStake(uint256 randomValue ) internal view returns (Node memory selectedNode) {
