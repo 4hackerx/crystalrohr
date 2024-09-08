@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { Coins, ShoppingCart, CreditCard, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useBalance, useContractWrite, useWriteContract } from 'wagmi';
+import { useBalance,  useWatchContractEvent,  useWriteContract } from 'wagmi';
+import { tokenABI } from '@/abi/tokenABI';
+import { toast } from 'react-toastify';
 
 const TokenManagementPage = () => {
   const [totalTokens, setTotalTokens] = useState(1000);
@@ -17,10 +19,20 @@ const TokenManagementPage = () => {
   
     const result = useBalance({
       address: '0xba17Bd12b3C6d0b4679Fe1bdfb78eB95F057E685',
-      token:"0xe64048ade7adc9512c880f622b50F2D9e99af3aa",
+      token:"0xa4469D636e79FA46C4E1d320c96E647db59E5a36",
       chainId:11155111
     })
-  // const handlePurchase = () => {
+
+    const {writeContract} = useWriteContract();
+    useWatchContractEvent({
+      address: '0xa4469D636e79FA46C4E1d320c96E647db59E5a36',
+      abi:tokenABI,
+      eventName: 'Minted',
+      onLogs(logs) {
+        toast("1000 Tokens sent to your wallet");
+      },
+    })
+  // const handleP urchase = () => {
   //   const amount = parseInt(purchaseAmount);
   //   if (!isNaN(amount) && amount > 0) {
   //     setTotalTokens(prevTokens => prevTokens + amount);
@@ -43,6 +55,7 @@ const TokenManagementPage = () => {
   //     setWithdrawAmount('');
   //   }
   // };
+  
 
   return (
     <div className="min-h-screen bg-black text-white p-4 sm:p-8">
@@ -68,7 +81,13 @@ const TokenManagementPage = () => {
             <div className="bg-black bg-opacity-30 rounded-xl p-6 sm:p-8 flex items-center justify-center">
               <div className='flex items-center justify-center flex-col gap-5'>
                 <h2 className="text-xl sm:text-2xl font-semibold mb-2 ">Faucet for Rohr Tokens</h2>
-                <button className='text-xl bg-[#0346FF] shadow-xl px-4 py-2 rounded-xl'>Get Tokens</button>
+                <button className='text-xl bg-[#0346FF] shadow-xl px-4 py-2 rounded-xl' onClick={()=>{
+                  writeContract({
+                    address: "0xa4469D636e79FA46C4E1d320c96E647db59E5a36",
+                    abi:tokenABI,
+                    functionName: "mint",
+                  })
+                }}>Get Tokens</button>
               </div>
             </div>
           </section>
