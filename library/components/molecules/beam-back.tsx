@@ -1,7 +1,9 @@
 "use client";
-import { cn } from "../lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import React, { useRef, useState, useEffect } from "react";
+
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+
+import { cn } from "@/utils";
 
 export const BeamBack = ({
   children,

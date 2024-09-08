@@ -1,5 +1,5 @@
 import { useAccount, useConnect } from "wagmi";
-import DisconnectButton from "../../../app/Components/DisconnectButton";
+import DisconnectButton from "../molecules/disconnect-button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Image from "next/image";

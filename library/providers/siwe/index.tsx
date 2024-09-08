@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { CustomSIWEConfig, SIWESession } from "@/types";
 
+export const SESSION_KEY = "did";
 const siweConfig: CustomSIWEConfig = {
   getNonce: async () => {
     return "8";

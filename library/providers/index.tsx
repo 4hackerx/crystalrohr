@@ -6,6 +6,7 @@ import React from "react";
 import ConnectKitProvider from "./connectkit";
 import SIWEProvider from "./siwe";
 import WagmiProvider from "./wagmi";
+import XMTPProvider from "./xmtp";
 
 const queryClient = new QueryClient();
 
@@ -14,7 +15,9 @@ const RootProvider = ({ children }: { children: React.ReactNode }) => {
     <WagmiProvider>
       <QueryClientProvider client={queryClient}>
         <SIWEProvider>
-          <ConnectKitProvider>{children}</ConnectKitProvider>
+          <ConnectKitProvider>
+            <XMTPProvider>{children}</XMTPProvider>
+          </ConnectKitProvider>
         </SIWEProvider>
       </QueryClientProvider>
     </WagmiProvider>
