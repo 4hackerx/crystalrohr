@@ -6,9 +6,11 @@ import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK, WALLET_ADAPTERS } from "@web3auth/b
 import { Chain } from "wagmi/chains";
 import { WalletServicesPlugin } from "@web3auth/wallet-services-plugin";
 
+export let web3AuthInstance:Web3Auth;
 export default function Web3AuthConnectorInstance(chains: Chain[]) {
   // Create Web3Auth Instance
   const name = "CrystalRohr";
+
   const chainConfig = {
     chainNamespace: CHAIN_NAMESPACES.EIP155,
     chainId: "0x" + chains[0].id.toString(16),
@@ -21,7 +23,7 @@ export default function Web3AuthConnectorInstance(chains: Chain[]) {
 
   const privateKeyProvider = new EthereumPrivateKeyProvider({ config: { chainConfig } });
 
-  const web3AuthInstance = new Web3Auth({
+  web3AuthInstance = new Web3Auth({
     clientId: "BAf-TMvY5A8y73hRyyj_GBRkUmd_Yz5bZ8sFvExZp9Zl40BzI8LBktJ2piFwoeP5HxMWoPG8yD23vYwRXtkHa8M",
     chainConfig,
     privateKeyProvider,
@@ -62,6 +64,51 @@ export default function Web3AuthConnectorInstance(chains: Chain[]) {
       showOnModal: true,
     },
   }
+  const addAllChains = async ()=>{
+   
+    await web3AuthInstance.addChain({
+      chainNamespace: CHAIN_NAMESPACES.EIP155,
+      chainId: "0x128",
+      rpcTarget: "https://testnet.hashio.io/api",
+      displayName: "Hedera Testnet",
+      blockExplorerUrl: "https://hashscan.io/testnet/",
+      ticker: "HBAR",
+      tickerName: "HBAR",
+      logo: "https://cryptologos.cc/logos/hedera-hbar-logo.png?v=033",
+    });
+    await web3AuthInstance.addChain({
+      chainNamespace: CHAIN_NAMESPACES.EIP155,
+      chainId: "0xa788",
+      rpcTarget: "http://35.215.120.180:8545",
+      displayName: "Kinto Testnet",
+      blockExplorerUrl: "https://explorer.kinto.xyz",
+      ticker: "ETH",
+      tickerName: "ETH",
+      logo: "https://pbs.twimg.com/profile_images/1658109577081044992/ZBpLvGSb_400x400.jpg",
+    });
+    await web3AuthInstance.addChain({
+      chainNamespace: CHAIN_NAMESPACES.EIP155,
+      chainId: "0xa96",
+      rpcTarget: "https://rpc-testnet.morphl2.io",
+      displayName: "Morph Testnet",
+      blockExplorerUrl: "https://explorer-testnet.morphl2.io/",
+      ticker: "ETH",
+      tickerName: "ETH",
+      logo: "https://morphl2brand.notion.site/image/https%3A%2F%2Fprod-files-secure.s3.us-west-2.amazonaws.com%2Ffcab2c10-8da9-4414-aa63-4998ddf62e78%2F64fbcffc-0e7c-45e1-8900-1bb36dc90924%2FFrame_1597882262.png?table=block&id=0e6a22c3-ed4e-4c25-9575-11b95b1eade9&spaceId=fcab2c10-8da9-4414-aa63-4998ddf62e78&width=2000&userId=&cache=v2",
+    });
+    await web3AuthInstance.addChain({
+      chainNamespace: CHAIN_NAMESPACES.EIP155,
+      chainId: "0x1e",
+      rpcTarget: "https://rootstock.drpc.org",
+      displayName: "Rootstock Mainnet",
+      blockExplorerUrl: "https://explorer.rootstock.io/",
+      ticker: "RBTC",
+      tickerName: "RBTC",
+      logo: "https://pbs.twimg.com/profile_images/1592915327343624195/HPPSuVx3_400x400.jpg",
+    });
+  }
+
+  addAllChains();
 
   return Web3AuthConnector({
       web3AuthInstance,
