@@ -223,18 +223,37 @@ export function useNodeService() {
   }, [writeWithdrawRewards]);
 
   const getNodeJobs = useCallback(
-    async (id: bigint) => {
+    async (id: bigint): Promise<bigint[]> => {
       setNodeId(id);
       await refetchNodeJobs();
-      return nodeJobs;
+      return (nodeJobs || []) as bigint[];
     },
     [refetchNodeJobs, nodeJobs]
   );
 
   const getNodeDetails = useCallback(
-    async (nodeAddress: Address) => {
+    async (
+      nodeAddress: Address
+    ): Promise<{
+      nodeId: bigint;
+      stake: bigint;
+      isActive: boolean;
+      isTrusted: boolean;
+      totalJobsCompleted: bigint;
+      reputation: bigint;
+    } | null> => {
       await refetchNodeDetails();
-      return nodeDetails;
+      if (nodeDetails) {
+        return {
+          nodeId: nodeDetails[0],
+          stake: nodeDetails[1],
+          isActive: nodeDetails[2],
+          isTrusted: nodeDetails[3],
+          totalJobsCompleted: nodeDetails[4],
+          reputation: nodeDetails[5],
+        };
+      }
+      return null;
     },
     [refetchNodeDetails, nodeDetails]
   );
