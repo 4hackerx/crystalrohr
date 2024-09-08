@@ -64,7 +64,7 @@ export function useUserService() {
       ipfsHash: string,
       duration: number,
       isEncrypted: boolean
-    ): Promise<void> => {
+    ): Promise<{ videoId: bigint }> => {
       return new Promise((resolve, reject) => {
         writeUploadVideo(
           {
@@ -110,9 +110,9 @@ export function useUserService() {
                   ) {
                     const newVideoId = BigInt(decodedEvent.args.videoId);
                     setVideoId(newVideoId);
+                    resolve({ videoId: newVideoId });
                   }
                 }
-                resolve();
               } catch (error) {
                 reject(error);
               }
@@ -126,7 +126,7 @@ export function useUserService() {
   );
 
   const createJob = useCallback(
-    (videoId: bigint, jobType: number): Promise<void> => {
+    (videoId: bigint, jobType: number): Promise<{ jobId: bigint }> => {
       return new Promise((resolve, reject) => {
         writeCreateJob(
           {
@@ -172,9 +172,9 @@ export function useUserService() {
                   ) {
                     const newJobId = BigInt(decodedEvent.args.jobId);
                     setJobId(newJobId);
+                    resolve({ jobId: newJobId });
                   }
                 }
-                resolve();
               } catch (error) {
                 reject(error);
               }
@@ -253,37 +253,68 @@ export function useUserService() {
   );
 
   const getVideoDetails = useCallback(
-    async (id: bigint) => {
+    async (id: bigint): Promise<{
+      ipfsHash: string;
+      duration: number;
+      uploader: string;
+      isEncrypted: boolean;
+    }> => {
       setVideoId(id);
       await refetchVideoDetails();
-      return videoDetails;
+      if (!videoDetails) throw new Error("No video details found");
+      return {
+        ipfsHash: videoDetails[0],
+        duration: Number(videoDetails[1]),
+        uploader: videoDetails[2],
+        isEncrypted: videoDetails[3],
+      };
     },
     [refetchVideoDetails, videoDetails]
   );
 
   const getJobStatus = useCallback(
-    async (id: bigint) => {
+    async (id: bigint): Promise<{ status: number }> => {
       setJobId(id);
       await refetchJobStatus();
-      return jobStatus;
+      if (!jobStatus) throw new Error("No job status found");
+      return { status: jobStatus };
     },
     [refetchJobStatus, jobStatus]
   );
 
   const getJobDetails = useCallback(
-    async (id: bigint) => {
+    async (id: bigint): Promise<{
+      videoId: number;
+      requester: string;
+      nodeId: number;
+      status: number;
+      jobType: number;
+      creationTime: number;
+      resultIpfsHash: string;
+      price: number;
+    }> => {
       setJobId(id);
       await refetchJobDetails();
-      return jobDetails;
+      if (!jobDetails) throw new Error("No job details found");
+      return {
+        videoId: Number(jobDetails.videoId),
+        requester: jobDetails.requester,
+        nodeId: Number(jobDetails.nodeId),
+        status: Number(jobDetails.status),
+        jobType: Number(jobDetails.jobType),
+        creationTime: Number(jobDetails.creationTime),
+        resultIpfsHash: jobDetails.resultIpfsHash,
+        price: Number(jobDetails.price),
+      };
     },
     [refetchJobDetails, jobDetails]
   );
 
-  const getUserJobs = useCallback(async () => {
-    if (!address) throw new Error("No user address");
+  const getUserJobs = useCallback(async (): Promise<number[]> => {
     await refetchUserJobs();
-    return userJobs;
-  }, [address, refetchUserJobs, userJobs]);
+    if (!userJobs) throw new Error("No user jobs found");
+    return userJobs.map(Number);
+  }, [refetchUserJobs, userJobs]);
 
   return {
     uploadVideo,
