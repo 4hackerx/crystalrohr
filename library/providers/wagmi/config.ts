@@ -36,6 +36,6 @@ export const config = createConfig({
     [hederaTestnet.id]:http()
   },
   connectors: [
-    Web3AuthConnectorInstance([mainnet, sepolia, polygon,rootstockTestnet,hederaTestnet]),
+    Web3AuthConnectorInstance([sepolia, mainnet,  polygon,rootstockTestnet,hederaTestnet]),
   ],
 });
