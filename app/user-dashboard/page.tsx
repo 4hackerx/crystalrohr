@@ -62,7 +62,7 @@ const VideoProcessingPage = () => {
     } else {
       toast.error("Error uploading file");
     }
-  }, [uploadFile, uploadVideo, encryptedJob, getVideoDetails, videoId]);
+  }, [uploadFile, uploadVideo, encryptedJob]);
 
   const handleGenerateCaption = useCallback(async () => {
     if (!videoId) {
@@ -76,7 +76,7 @@ const VideoProcessingPage = () => {
     } catch (error) {
       toast.error("Error creating caption generation job");
     }
-  }, [videoId, createJob, setJobId]);
+  }, [videoId, createJob, setJobId, encryptedJob]);
 
   const handleJobAction = useCallback(
     async (action: () => Promise<any>, successMessage: string) => {
@@ -140,7 +140,7 @@ const VideoProcessingPage = () => {
               <p className="mb-2 text-sm">
                 {file.name} will be uploaded.{" "}
                 <span className="font-semibold">
-                  Click "Upload" to start, or cancel
+                  Click &quot;Upload&quot; to start, or cancel
                 </span>
               </p>
               {!uploading && (
