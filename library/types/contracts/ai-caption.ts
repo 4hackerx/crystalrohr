@@ -1,6 +1,6 @@
 const data = {
   name: "AICaption",
-  address: "",
+  address: "0x89e9BEFE45968169F481c8aEb1843Fa36d4c8cb6",
   abi: [
     {
       inputs: [
