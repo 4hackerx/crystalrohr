@@ -85,7 +85,7 @@ export const Inbox: React.FC = () => {
   ));
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col w-full">
       <div className="p-4 bg-gray-100">
         <Button onClick={handleStartNewConversation} className="w-full">
           New message
@@ -93,13 +93,23 @@ export const Inbox: React.FC = () => {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="w-1/3 overflow-y-auto border-r border-gray-200">
-          {!previews.length && (
+          {!previews.length && !isLoading && (
             <p className="p-4 text-gray-500">
               It looks like you don&rsquo;t have any conversations yet. Create
               one to get started
             </p>
           )}
-          {previews}
+          {isLoading ? (
+            <div className="p-4">
+              <div className="animate-pulse space-y-4">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="h-20 bg-gray-200 rounded"></div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            previews
+          )}
         </div>
         <div className="w-2/3 flex flex-col">
           {isNewMessage ? (
@@ -188,13 +198,21 @@ const ConversationPreviewCard: React.FC<ConversationPreviewCardProps> = ({
     onClick?.(conversation);
   }, [conversation, onClick]);
 
-  const handleAllow = useCallback(async () => {
-    await allow([conversation.peerAddress]);
-  }, [allow, conversation.peerAddress]);
+  const handleAllow = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      await allow([conversation.peerAddress]);
+    },
+    [allow, conversation.peerAddress]
+  );
 
-  const handleDeny = useCallback(async () => {
-    await deny([conversation.peerAddress]);
-  }, [deny, conversation.peerAddress]);
+  const handleDeny = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      await deny([conversation.peerAddress]);
+    },
+    [deny, conversation.peerAddress]
+  );
 
   return (
     <div
@@ -206,7 +224,7 @@ const ConversationPreviewCard: React.FC<ConversationPreviewCardProps> = ({
         isSelected ? "bg-blue-50" : ""
       }`}
     >
-      <div className="font-semibold">{conversation.peerAddress}</div>
+      <div className="font-semibold truncate">{conversation.peerAddress}</div>
       <div className="text-sm text-gray-500 truncate">{content}</div>
       <div className="mt-2 flex justify-between items-center">
         <div className="text-xs text-gray-400">
@@ -215,20 +233,14 @@ const ConversationPreviewCard: React.FC<ConversationPreviewCardProps> = ({
         <div className="text-xs font-medium">{consentState}</div>
         <div className="flex space-x-2">
           <button
-            className="text-xs text-blue-600 hover:text-blue-800"
-            onClick={(e) => {
-              e.stopPropagation();
-              void handleAllow();
-            }}
+            className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded bg-blue-100 hover:bg-blue-200"
+            onClick={handleAllow}
           >
             Allow
           </button>
           <button
-            className="text-xs text-red-600 hover:text-red-800"
-            onClick={(e) => {
-              e.stopPropagation();
-              void handleDeny();
-            }}
+            className="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded bg-red-100 hover:bg-red-200"
+            onClick={handleDeny}
           >
             Deny
           </button>
@@ -271,9 +283,13 @@ export const NewMessage: React.FC<NewMessageProps> = ({ onSuccess }) => {
 
   useEffect(() => {
     const checkAddress = async () => {
-      setIsLoading(true);
-      setIsOnNetwork(await canMessage(peerAddress));
-      setIsLoading(false);
+      if (peerAddress) {
+        setIsLoading(true);
+        setIsOnNetwork(await canMessage(peerAddress));
+        setIsLoading(false);
+      } else {
+        setIsOnNetwork(false);
+      }
     };
     void checkAddress();
   }, [canMessage, peerAddress]);
