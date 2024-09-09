@@ -38,7 +38,7 @@ const kintoChain: Chain = {
   testnet: true, // Set to false if it's mainnet
 };
 
-const galadriel = defineChain({
+export const galadriel = defineChain({
   id: 696969,
   name: "Galadriel",
   nativeCurrency: {
