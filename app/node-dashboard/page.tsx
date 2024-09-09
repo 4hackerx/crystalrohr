@@ -1,10 +1,16 @@
 "use client";
 
+import Canvas from "@/components/molecules/canvas";
 import { XMTPConnect } from "@/components/molecules/xmtp-connect";
+import useCaptureStills from "@/hooks/use-capture-stills";
+import useJobNotifier from "@/hooks/use-job-notifier";
+import { useNodeBroadcast } from "@/hooks/use-node-broadcast";
 import { useNodeService } from "@/hooks/use-node-service";
+import { useVisionFunctions } from "@/hooks/use-vision-functions";
+import { galadriel } from "@/providers/wagmi/config";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useAccount } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 
 type NodeDetails = {
   nodeId: bigint;
@@ -16,6 +22,8 @@ type NodeDetails = {
 };
 
 const Dashboard = () => {
+  const { switchChain } = useSwitchChain();
+
   const [stakeAmount, setStakeAmount] = useState("");
   const [nodeDetails, setNodeDetails] = useState<NodeDetails | null>({
     nodeId: BigInt(0),
@@ -27,6 +35,8 @@ const Dashboard = () => {
   });
   const [nodeJobs, setNodeJobs] = useState<bigint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVideoVisible, setIsVideoVisible] = useState(false);
+  const [startChatExecuted, setStartChatExecuted] = useState(false);
 
   const { address } = useAccount();
   const {
@@ -40,6 +50,66 @@ const Dashboard = () => {
     nodeId,
     setNodeId,
   } = useNodeService();
+  const {
+    canvasRef,
+    captureSliced,
+    sceneRef,
+    videoRef,
+    slicedRef,
+    stopPolling,
+    startPolling,
+    stopUploadPolling,
+    startUploadPolling,
+    capturedImages,
+    capturedScenes,
+    processStatus,
+    lastEvent,
+  } = useCaptureStills();
+
+  const { startChat, chatId } = useVisionFunctions();
+
+  const {
+    broadcast,
+    isLoading: isBroadcasting,
+    error: broadcastError,
+  } = useNodeBroadcast();
+
+  const notifier = useJobNotifier(
+    "0xB754369b3a7C430d7E94c14f33c097C398a0caa5",
+    "6"
+  );
+
+  const sendToCLient = {
+    jobId: "6",
+    chatId: chatId,
+    capturedScenes: capturedScenes,
+    processStatus: processStatus,
+  };
+
+  const handleBroadcast = () => {
+    broadcast(
+      "0xB754369b3a7C430d7E94c14f33c097C398a0caa5",
+      "CoQBMHhlOTJjYjhiMzIzN2RiZWQyODk2NmVhNGZmZDYyNGJjNDEzN2UyYTI2ZDUyOWFjZDNkNjVmZDllM2YxMjc5OTQ4MzA3MGUzMTU2MTY3MWU4ZWM2ZmYwNjE1YTE0MWY4ZTA4MTdiZWE3YjljYWYxODQ1NmIyYjBlMDI3ZWJlMTJmNTFjEO+E/JOdMhgB",
+      JSON.stringify(sendToCLient)
+    );
+  };
+
+  useEffect(() => {
+    if (lastEvent === "all_complete" && !startChatExecuted) {
+      switchChain({ chainId: galadriel.id });
+      startChat(capturedImages);
+      setStartChatExecuted(true);
+    }
+
+    handleBroadcast();
+  }, [
+    lastEvent,
+    processStatus,
+    startChatExecuted,
+    switchChain,
+    startChat,
+    capturedImages,
+  ]);
 
   useEffect(() => {
     const fetchNodeDetails = async () => {
@@ -57,8 +127,8 @@ const Dashboard = () => {
             }
           }
         } catch (error) {
-          console.error("Error fetching node details:", error);
           toast.error("Failed to fetch node details. Please try again.");
+          console.error("Error fetching node details:", error);
         } finally {
           setIsLoading(false);
         }
@@ -124,7 +194,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
-      <XMTPConnect />
+      <Canvas {...{ canvasRef }} />
+
       <h1 className="text-4xl font-bold mb-12 text-center">
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#550EFB] to-[#360C99]">
           Node Dashboard
@@ -219,29 +290,89 @@ const Dashboard = () => {
         nodeDetails.isActive &&
         renderSection(
           "Current Jobs",
-          nodeJobs.length > 0 ? (
-            <ul>
-              {nodeJobs.map((jobId, index) => (
-                <li key={index} className="mb-4">
-                  <p>Job ID: {jobId.toString()}</p>
-                  <button
-                    onClick={() =>
-                      handleAction(
-                        () => submitJobResult(jobId, "Result"),
-                        "Successfully submitted job result!"
-                      )
-                    }
-                    disabled={isLoading}
-                    className="bg-[#550EFB] hover:bg-[#360C99] text-white rounded px-4 py-2"
+          <div>
+            <div className="mb-4">
+              <button
+                onClick={() => setIsVideoVisible(!isVideoVisible)}
+                className="bg-[#550EFB] hover:bg-[#360C99] text-white rounded px-4 py-2"
+              >
+                {isVideoVisible ? "Hide Video Player" : "Show Video Player"}
+              </button>
+            </div>
+            {notifier.latestMessage?.url && (
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                  isVideoVisible ? "max-h-[500px]" : "max-h-0"
+                }`}
+              >
+                <div className="overflow-y-auto" style={{ maxHeight: "500px" }}>
+                  <video
+                    crossOrigin="anonymous"
+                    ref={videoRef}
+                    controls
+                    preload="metadata"
+                    width="560px"
+                    height="315px"
                   >
-                    Submit Result
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No current jobs.</p>
-          )
+                    <source src={notifier.latestMessage.url} type="video/mp4" />
+                  </video>
+
+                  <div className="mt-4 space-x-2">
+                    <button
+                      onClick={() => captureSliced()}
+                      className="bg-[#550EFB] hover:bg-[#360C99] text-white rounded px-4 py-2"
+                    >
+                      Capture Image
+                    </button>
+                    <button
+                      onClick={() => stopPolling()}
+                      className="bg-[#550EFB] hover:bg-[#360C99] text-white rounded px-4 py-2"
+                    >
+                      Stop polling
+                    </button>
+                    <button
+                      onClick={() => startPolling()}
+                      className="bg-[#550EFB] hover:bg-[#360C99] text-white rounded px-4 py-2"
+                    >
+                      Start polling
+                    </button>
+                  </div>
+
+                  <div
+                    ref={slicedRef}
+                    style={{ display: "flex", flexWrap: "wrap" }}
+                  ></div>
+                  <div
+                    ref={sceneRef}
+                    style={{ display: "flex", flexWrap: "wrap" }}
+                  ></div>
+                </div>
+              </div>
+            )}
+            {/* {nodeJobs.length > 0 ? (
+              <ul>
+                {nodeJobs.map((jobId, index) => (
+                  <li key={index} className="mb-4">
+                    <p>Job ID: {jobId.toString()}</p>
+                    <button
+                      onClick={() =>
+                        handleAction(
+                          () => submitJobResult(jobId, "Result"),
+                          "Successfully submitted job result!"
+                        )
+                      }
+                      disabled={isLoading}
+                      className="bg-[#550EFB] hover:bg-[#360C99] text-white rounded px-4 py-2"
+                    >
+                      Submit Result
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No current jobs.</p>
+            )} */}
+          </div>
         )}
 
       {renderSection(
@@ -275,6 +406,8 @@ const Dashboard = () => {
           ))}
         </div>
       )}
+
+      <XMTPConnect />
     </div>
   );
 };
