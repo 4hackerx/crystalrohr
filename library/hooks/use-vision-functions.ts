@@ -11,7 +11,7 @@ const CHAT_ADDRESS = core.address as Address;
 const CHAT_ABI = core.abi;
 
 const MESSAGE =
-  "Create a JSON array where each entry is a concise sentence description tailored for a visually impaired audience. These descriptions should summarize the main elements—characters, expressions, setting, actions, and mood—of each video still sequentially from the first to the last. Use the following format: Brief description of first image for a visually impaired audience, Brief description of second image for a visually impaired audience., Continue with concise descriptions for each subsequent image  Each description should be crafted to convey the essential visual details of the still in a single sentence.";
+  "Create a JSON array where each entry is a concise sentence description tailored for a visually impaired audience. These descriptions should summarize the main elements—characters, expressions, setting, actions, and mood—of each video still sequentially from the first to the last. Use the following format: Brief description of first image for a visually impaired audience, Brief description of second image for a visually impaired audience., Continue with concise descriptions for each subsequent image  Each description should be crafted to convey the essential visual details of the still in a single sentence. 1.Your response must be in JSON, don't put it in a md json tag only an array, 2. don't say this picture simply talk naturally e.g a middle aged woman in a swim suit etc";
 
 const galadrielChain = defineChain({
   id: 696969,
@@ -38,7 +38,7 @@ const galadrielChain = defineChain({
 export function useVisionFunctions() {
   const [chatId, setchatId] = useState<number | null>(null);
 
-  const { writeContract: writeAddMessage } = useWriteContract();
+  const { writeContract: writeStartChat } = useWriteContract();
 
   const { data: messageHistory, refetch: refetchMessageHistory } =
     useReadContract({
@@ -52,15 +52,15 @@ export function useVisionFunctions() {
       chainId: galadrielChain.id,
     });
 
-  const addMessage = useCallback(
+  const startChat = useCallback(
     (imageUrls: string[]): Promise<void> => {
       return new Promise((resolve, reject) => {
-        writeAddMessage(
+        writeStartChat(
           {
             address: CHAT_ADDRESS,
             abi: CHAT_ABI,
-            functionName: "addMessage",
-            args: [MESSAGE, BigInt(chatId || 0)],
+            functionName: "startChat",
+            args: [MESSAGE, imageUrls],
             chainId: galadrielChain.id,
           },
           {
@@ -112,7 +112,7 @@ export function useVisionFunctions() {
         );
       });
     },
-    [writeAddMessage, chatId]
+    [writeStartChat, chatId]
   );
 
   const getMessageHistory = useCallback(
@@ -121,6 +121,7 @@ export function useVisionFunctions() {
       if (!currentChatId) {
         throw new Error("Chat ID is not set");
       }
+      setchatId(currentChatId);
       await refetchMessageHistory();
       return messageHistory;
     },
@@ -128,7 +129,7 @@ export function useVisionFunctions() {
   );
 
   return {
-    addMessage,
+    startChat,
     getMessageHistory,
     chatId,
   };
