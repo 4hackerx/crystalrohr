@@ -103,11 +103,12 @@ graph TD
 - **Sign Protocol**: Used sign protocol to generate attestations for the captioned video
 
 ## Blockchains Used
-- **Ethereum Sepolia Testnet**
-- **Rootstock Testnet**
-- **Hedera Testnet**
-- **Morph Testnet**
-- **Kinto Holesky**
+
+We have deployed our Core contract on various blokchains. The networks used and their contract addresses are given below
+
+- **Ethereum Sepolia Testnet** - 0xfe5D4ec2AF1AB79DD2eA0d4bC0e8B5548039E6e1 
+- **Fhenix Helium Testnet**    - 0x3dd4fE1f0bA73Cc19a7c910E7116034F14f2Eb95 
+- **Rootstock Testnet**        - 0xDF933Cd647f69198D44cC0C6e982568534546f33 
 
 ## Installation
 
