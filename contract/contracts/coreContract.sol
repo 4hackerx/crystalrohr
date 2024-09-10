@@ -1,3 +1,7 @@
+//Deployed on Sepolia 0xfe5D4ec2AF1AB79DD2eA0d4bC0e8B5548039E6e1
+//Deployed on Fhenix 0x3dd4fE1f0bA73Cc19a7c910E7116034F14f2Eb95
+//Deployed on Rootstock 0xDF933Cd647f69198D44cC0C6e982568534546f33
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -85,12 +89,12 @@ contract CoreContract is ReentrancyGuard,Ownable {
     constructor(
        address _tokenAddress,
        address _vrfContractAddress
-    ) Ownable(msg.sender){
+    ) Ownable(){
         vrfContract = IVRF(_vrfContractAddress);
         tokenContract = IERC20(_tokenAddress);
-        jobPrice = 10 * 10**18; // 10 tokens
+        jobPrice = 100 * 10**18; // 100 tokens
         nodeFee = 80; // 80%
-        minStake = 10 * 10**18; // 10 tokens
+        minStake = 1000 * 10**18; // 1000 tokens
     }
 
     function uploadVideo(string calldata _ipfsHash, uint256 _duration, bool _isEncrypted) external returns (uint256 videoId) {

@@ -1,3 +1,7 @@
+//Deployed on fhenix  0x72307c0AA4319792AE78f8b12Dc730ECfADf450e
+//Deployed on sepolia  0xe64048ade7adc9512c880f622b50F2D9e99af3aa
+//Depoloyed on rootstock 0x72307c0AA4319792AE78f8b12Dc730ECfADf450e
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
