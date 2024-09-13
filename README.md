@@ -114,11 +114,11 @@ We have deployed our Core contract on various blokchains. The networks used and 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/project-name.git
+   git clone https://github.com/4hackerx/crystalrohr
    ```
 2. Install dependencies:
    ```bash
-   cd project-name
+   cd CrystalRohr
    npm install
    ```
 3. Set up environment variables:

@@ -1,16 +1,10 @@
-//Deployed on Fhenix 0xDF933Cd647f69198D44cC0C6e982568534546f33
-//Deployed on Sepolia 0xb89B642Fc1596dcc9b78D5A4ff49AB5740A1c6FD
-//Deployed on Rootstock 0x67A0152B7ee4A577EeA0d1Ff2efe40007A93C039
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2PlusInterface.sol";
-// import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import {VRFConsumerBaseV2Plus} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {IVRFCoordinatorV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFCoordinatorV2Plus.sol";
-import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {VRFV2PlusClient} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import "./interfaces/IVRF.sol";
 
 contract UnifiedVRF is VRFConsumerBaseV2Plus ,IVRF{
@@ -18,13 +12,12 @@ contract UnifiedVRF is VRFConsumerBaseV2Plus ,IVRF{
     
     uint256 private s_subscriptionId;
     bytes32 private s_keyHash;
-    uint32 private s_callbackGasLimit;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
     mapping(uint256 => uint256[]) private s_requests;
     mapping(uint256 => bool) private s_requestFulfilled;
     uint256 private nonce;
-    IVRFCoordinatorV2Plus private COORDINATOR;
+    uint256 public requestId;
 
     bool public useChainlink;
     
@@ -40,24 +33,27 @@ contract UnifiedVRF is VRFConsumerBaseV2Plus ,IVRF{
         useChainlink = _useChainlink;
         
         if (useChainlink) {
-            COORDINATOR = IVRFCoordinatorV2Plus(_vrfCoordinator);
             s_subscriptionId = _subscriptionId;
             s_keyHash = _keyHash;
         }
     }
 
-    function requestRandomWords(uint32 numWords) external override returns  (uint256 requestId) {
+    function requestRandomWords(uint32 numWords) external returns (uint256) {
         if (useChainlink) {
             requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: s_keyHash,
                 subId: s_subscriptionId,
                 requestConfirmations: REQUEST_CONFIRMATIONS,
-                callbackGasLimit: 2500000,
+                callbackGasLimit: 100000,
                 numWords: NUM_WORDS,
-                // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
-                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
+                extraArgs: VRFV2PlusClient._argsToBytes(
+                    VRFV2PlusClient.ExtraArgsV1({
+                        nativePayment: true
+                    })
+                )
             })
+
         );
             s_requests[requestId] = new uint256[](0);
             s_requestFulfilled[requestId] = false;
@@ -84,12 +80,12 @@ contract UnifiedVRF is VRFConsumerBaseV2Plus ,IVRF{
         emit RequestFulfilled(_requestId, _randomWords);
     }
 
-    function getRandomWords(uint256 requestId) external view override returns (uint256[] memory) {
-        require(s_requestFulfilled[requestId], "Request not fulfilled");
-        return s_requests[requestId];
+    function getRandomWords(uint256 _requestId) external view returns (uint256[] memory) {
+        require(s_requestFulfilled[_requestId], "Request not fulfilled");
+        return s_requests[_requestId];
     }
 
-    function getRequestStatus(uint256 _requestId) external view override returns (bool fulfilled, uint256[] memory randomWords) {
+    function getRequestStatus(uint256 _requestId) external view returns (bool fulfilled, uint256[] memory randomWords) {
         require(s_requests[_requestId].length > 0 || !s_requestFulfilled[_requestId], "Request not found");
         fulfilled = s_requestFulfilled[_requestId];
         randomWords = s_requests[_requestId];

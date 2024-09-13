@@ -1,15 +1,8 @@
-//Deployed on Sepolia 0xfe5D4ec2AF1AB79DD2eA0d4bC0e8B5548039E6e1
-//Deployed on Fhenix 0x3dd4fE1f0bA73Cc19a7c910E7116034F14f2Eb95
-//Deployed on Rootstock 0xDF933Cd647f69198D44cC0C6e982568534546f33
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-// import {VRFConsumerBaseV2Plus} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
-// import {VRFV2PlusClient} from "@chainlink/contracts@1.2.0/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IVRF.sol";
 
@@ -61,10 +54,11 @@ contract CoreContract is ReentrancyGuard,Ownable {
     uint256 public totalStaked;
     uint256 public minStake;
     uint256[] public nodeIds;
+    uint256 public requestId;
 
     mapping(uint256 => Video) public videos;
     mapping(uint256 => CaptioningJob) public jobs;
-    mapping(uint256 => Node) public nodes;
+    mapping(uint256 => Node) public nodes;  
     mapping(address => uint256) public nodesThroughAddress;
     mapping(address => uint256) public pendingRewards;
     mapping(address => uint256[]) public userJobs;
@@ -89,12 +83,13 @@ contract CoreContract is ReentrancyGuard,Ownable {
     constructor(
        address _tokenAddress,
        address _vrfContractAddress
-    ) Ownable(){
+    ) Ownable(msg.sender){
         vrfContract = IVRF(_vrfContractAddress);
         tokenContract = IERC20(_tokenAddress);
-        jobPrice = 100 * 10**18; // 100 tokens
+        jobPrice = 10* 10**18; // 100 tokens
         nodeFee = 80; // 80%
-        minStake = 1000 * 10**18; // 1000 tokens
+        minStake = 10 * 10**18; // 1000 tokens
+        // tokenContract.approve(address(this), 1000e18);
     }
 
     function uploadVideo(string calldata _ipfsHash, uint256 _duration, bool _isEncrypted) external returns (uint256 videoId) {
@@ -109,8 +104,8 @@ contract CoreContract is ReentrancyGuard,Ownable {
     }
 
     function createJob(uint256 _videoId, JobType _jobType) external nonReentrant returns (uint256 jobId) {
-        require(tokenContract.transferFrom(msg.sender, address(this), jobPrice), "Payment failed");
-        
+        tokenContract.transferFrom(msg.sender, address(this), jobPrice);
+        // tokenContract.transfer(address(this),jobPrice);
         jobId = nextJobId++;
         jobs[jobId] = CaptioningJob(_videoId, msg.sender, 0, JobStatus.Pending, _jobType, block.timestamp, "", jobPrice);
         userJobs[msg.sender].push(jobId);
@@ -143,15 +138,13 @@ contract CoreContract is ReentrancyGuard,Ownable {
         return userJobs[_user];
     }
 
-    function registerNode() external payable returns (uint256 nodeId) {
-        require(msg.value >= minStake, "Insufficient stake");
-        require(nodes[nodesThroughAddress[msg.sender]].isActive == false, "Node already registered");
-        require(tokenContract.transferFrom(msg.sender, address(this), minStake),"Stake Not Received");
+    function registerNode() external payable returns(uint256 nodeId) {
+        tokenContract.transferFrom(msg.sender,address(this),minStake);
         nodeId = nextNodeId++;
         nodeIds.push(nodeId);
         nodes[nodeId] = Node(msg.sender, msg.value, true, false, 0, 0);
         nodesThroughAddress[msg.sender] = nodeId;
-        totalStaked += msg.value;
+        totalStaked += minStake;
         emit NodeRegistered(nodeId, msg.sender, msg.value, false);
     }
 
@@ -184,7 +177,7 @@ contract CoreContract is ReentrancyGuard,Ownable {
     require(jobs[_jobId].status == JobStatus.Pending, "Job not pending");
     require(totalStaked > 0, "No nodes staked");
     
-    uint256 requestId = vrfContract.requestRandomWords(1);
+    requestId = vrfContract.requestRandomWords(1);
     vrfRequests[requestId] = _jobId;
     
     jobs[_jobId].status = JobStatus.Processing;
@@ -214,9 +207,9 @@ contract CoreContract is ReentrancyGuard,Ownable {
     }
 
     function fulfillRandomness(uint256 _jobId) public {
-        uint256 requestId = vrfRequests[_jobId];
-        (bool fulfilled, uint256[] memory randomWords) = vrfContract.getRequestStatus(requestId);
-        require(fulfilled, "Random number not yet available");
+        requestId = vrfRequests[_jobId];
+        (, uint256[] memory randomWords) = vrfContract.getRequestStatus(requestId);
+        // require(fulfilled, "Random number not yet available");
         require(jobs[_jobId].status == JobStatus.Processing, "Job not processing");
 
         uint256 randomValue = randomWords[0] % totalStaked;
