@@ -7,7 +7,7 @@ import {
   ContentTypeMetadata,
 } from "@xmtp/react-sdk";
 
-const useJobNotifier = (address: string, jobId: string) => {
+const useJobNotifier = (address: string, jobId?: string) => {
   const [latestMessage, setLatestMessage] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +26,7 @@ const useJobNotifier = (address: string, jobId: string) => {
 
   const parseMessage = useCallback(
     (content: string) => {
+      if (!jobId) return;
       try {
         const parsedContent = JSON.parse(content);
         return (

@@ -13,13 +13,14 @@ export function useUserService() {
   const { address } = useAccount();
   const [videoId, setVideoId] = useState<bigint | null>(null);
   const [jobId, setJobId] = useState<bigint | null>(null);
+  const [nodeId, setNodeId] = useState<bigint | null>(null);
 
   const { writeContract: writeUploadVideo } = useWriteContract();
   const { writeContract: writeCreateJob } = useWriteContract();
   const { writeContract: writeCancelJob } = useWriteContract();
   const { writeContract: writeCreateDispute } = useWriteContract();
 
-  const { data: videoDetails, refetch: refetchVideoDetails } = useReadContract({
+  const { refetch: refetchVideoDetails } = useReadContract({
     address: CORE_ADDRESS,
     abi: CORE_ABI,
     functionName: "getVideoDetails",
@@ -29,7 +30,7 @@ export function useUserService() {
     },
   });
 
-  const { data: jobStatus, refetch: refetchJobStatus } = useReadContract({
+  const { refetch: refetchJobStatus } = useReadContract({
     address: CORE_ADDRESS,
     abi: CORE_ABI,
     functionName: "getJobStatus",
@@ -39,7 +40,7 @@ export function useUserService() {
     },
   });
 
-  const { data: jobDetails, refetch: refetchJobDetails } = useReadContract({
+  const { refetch: refetchJobDetails } = useReadContract({
     address: CORE_ADDRESS,
     abi: CORE_ABI,
     functionName: "getJobDetails",
@@ -49,13 +50,23 @@ export function useUserService() {
     },
   });
 
-  const { data: userJobs, refetch: refetchUserJobs } = useReadContract({
+  const { refetch: refetchUserJobs } = useReadContract({
     address: CORE_ADDRESS,
     abi: CORE_ABI,
     functionName: "getUserJobs",
     args: [address!],
     query: {
       enabled: !!address,
+    },
+  });
+
+  const { refetch: refetchNodeDetails } = useReadContract({
+    address: CORE_ADDRESS,
+    abi: CORE_ABI,
+    functionName: "getNodeDetails",
+    args: [nodeId!],
+    query: {
+      enabled: !!nodeId,
     },
   });
 
@@ -253,40 +264,44 @@ export function useUserService() {
   );
 
   const getVideoDetails = useCallback(
-    async (id: bigint): Promise<{
+    async (
+      id: bigint
+    ): Promise<{
       ipfsHash: string;
       duration: number;
       uploader: string;
       isEncrypted: boolean;
     }> => {
       setVideoId(id);
-      await refetchVideoDetails();
-      if (!videoDetails) throw new Error("No video details found");
+      const result = await refetchVideoDetails();
+      if (!result.data) throw new Error("No video details found");
       return {
-        ipfsHash: videoDetails[0],
-        duration: Number(videoDetails[1]),
-        uploader: videoDetails[2],
-        isEncrypted: videoDetails[3],
+        ipfsHash: result.data[0],
+        duration: Number(result.data[1]),
+        uploader: result.data[2],
+        isEncrypted: result.data[3],
       };
     },
-    [refetchVideoDetails, videoDetails]
+    [refetchVideoDetails]
   );
 
   const getJobStatus = useCallback(
     async (id: bigint): Promise<{ status: number }> => {
       setJobId(id);
-      await refetchJobStatus();
-      if (!jobStatus) throw new Error("No job status found");
-      return { status: jobStatus };
+      const result = await refetchJobStatus();
+      if (!result.data) throw new Error("No job status found");
+      return { status: Number(result.data) };
     },
-    [refetchJobStatus, jobStatus]
+    [refetchJobStatus]
   );
 
   const getJobDetails = useCallback(
-    async (id: bigint): Promise<{
-      videoId: number;
+    async (
+      id: bigint
+    ): Promise<{
+      videoId: bigint;
       requester: string;
-      nodeId: number;
+      nodeId: bigint;
       status: number;
       jobType: number;
       creationTime: number;
@@ -294,33 +309,57 @@ export function useUserService() {
       price: number;
     }> => {
       setJobId(id);
-      await refetchJobDetails();
-      if (!jobDetails) throw new Error("No job details found");
+      const result = await refetchJobDetails();
+      if (!result.data) throw new Error("No job details found");
       return {
-        videoId: Number(jobDetails.videoId),
-        requester: jobDetails.requester,
-        nodeId: Number(jobDetails.nodeId),
-        status: Number(jobDetails.status),
-        jobType: Number(jobDetails.jobType),
-        creationTime: Number(jobDetails.creationTime),
-        resultIpfsHash: jobDetails.resultIpfsHash,
-        price: Number(jobDetails.price),
+        videoId: result.data.videoId,
+        requester: result.data.requester,
+        nodeId: result.data.nodeId,
+        status: Number(result.data.status),
+        jobType: Number(result.data.jobType),
+        creationTime: Number(result.data.creationTime),
+        resultIpfsHash: result.data.resultIpfsHash,
+        price: Number(result.data.price),
       };
     },
-    [refetchJobDetails, jobDetails]
+    [refetchJobDetails]
   );
 
   const getUserJobs = useCallback(async (): Promise<number[]> => {
-    await refetchUserJobs();
-    if (!userJobs) throw new Error("No user jobs found");
-    return userJobs.map(Number);
-  }, [refetchUserJobs, userJobs]);
+    const result = await refetchUserJobs();
+    if (!result.data) throw new Error("No user jobs found");
+    return result.data.map(Number);
+  }, [refetchUserJobs]);
+
+  const getNodeDetails = useCallback(async (): Promise<{
+    address: Address;
+    stake: bigint;
+    isActive: boolean;
+    isTrusted: boolean;
+    totalJobsCompleted: bigint;
+    reputation: bigint;
+  } | null> => {
+    const result = await refetchNodeDetails();
+    if (result.data) {
+      return {
+        address: result.data[0],
+        stake: result.data[1],
+        isActive: result.data[2],
+        isTrusted: result.data[3],
+        totalJobsCompleted: result.data[4],
+        reputation: result.data[5],
+      };
+    }
+    return null;
+  }, [refetchNodeDetails]);
 
   return {
     uploadVideo,
     getVideoDetails,
     createJob,
     getJobStatus,
+    setNodeId,
+    getNodeDetails,
     cancelJob,
     getJobDetails,
     getUserJobs,

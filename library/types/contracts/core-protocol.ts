@@ -1,6 +1,6 @@
 const data = {
   name: "Core",
-  address: "",
+  address: "0x9410e95e3AD34C4dB6c38479ccdd5f1e68C44ae0",
   abi: [
     {
       inputs: [
@@ -11,18 +11,8 @@ const data = {
         },
         {
           internalType: "address",
-          name: "_vrfCoordinator",
+          name: "_vrfContractAddress",
           type: "address",
-        },
-        {
-          internalType: "bytes32",
-          name: "_keyHash",
-          type: "bytes32",
-        },
-        {
-          internalType: "uint256",
-          name: "_subscriptionId",
-          type: "uint256",
         },
       ],
       stateMutability: "nonpayable",
@@ -32,56 +22,23 @@ const data = {
       inputs: [
         {
           internalType: "address",
-          name: "have",
-          type: "address",
-        },
-        {
-          internalType: "address",
-          name: "want",
-          type: "address",
-        },
-      ],
-      name: "OnlyCoordinatorCanFulfill",
-      type: "error",
-    },
-    {
-      inputs: [
-        {
-          internalType: "address",
-          name: "have",
-          type: "address",
-        },
-        {
-          internalType: "address",
           name: "owner",
           type: "address",
         },
-        {
-          internalType: "address",
-          name: "coordinator",
-          type: "address",
-        },
       ],
-      name: "OnlyOwnerOrCoordinator",
+      name: "OwnableInvalidOwner",
       type: "error",
     },
     {
-      inputs: [],
-      name: "ZeroAddress",
-      type: "error",
-    },
-    {
-      anonymous: false,
       inputs: [
         {
-          indexed: false,
           internalType: "address",
-          name: "vrfCoordinator",
+          name: "account",
           type: "address",
         },
       ],
-      name: "CoordinatorSet",
-      type: "event",
+      name: "OwnableUnauthorizedAccount",
+      type: "error",
     },
     {
       anonymous: false,
@@ -266,32 +223,13 @@ const data = {
         {
           indexed: true,
           internalType: "address",
-          name: "from",
+          name: "previousOwner",
           type: "address",
         },
         {
           indexed: true,
           internalType: "address",
-          name: "to",
-          type: "address",
-        },
-      ],
-      name: "OwnershipTransferRequested",
-      type: "event",
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: true,
-          internalType: "address",
-          name: "from",
-          type: "address",
-        },
-        {
-          indexed: true,
-          internalType: "address",
-          name: "to",
+          name: "newOwner",
           type: "address",
         },
       ],
@@ -385,32 +323,6 @@ const data = {
       ],
       name: "VideoUploaded",
       type: "event",
-    },
-    {
-      inputs: [],
-      name: "acceptOwnership",
-      outputs: [],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [
-        {
-          internalType: "address",
-          name: "",
-          type: "address",
-        },
-      ],
-      name: "addressToNodeId",
-      outputs: [
-        {
-          internalType: "uint256",
-          name: "",
-          type: "uint256",
-        },
-      ],
-      stateMutability: "view",
-      type: "function",
     },
     {
       inputs: [
@@ -550,6 +462,19 @@ const data = {
           type: "uint256",
         },
       ],
+      name: "fulfillRandomness",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [
+        {
+          internalType: "uint256",
+          name: "_jobId",
+          type: "uint256",
+        },
+      ],
       name: "getJobDetails",
       outputs: [
         {
@@ -625,17 +550,17 @@ const data = {
     {
       inputs: [
         {
-          internalType: "address",
-          name: "_nodeAddress",
-          type: "address",
+          internalType: "uint256",
+          name: "_nodeId",
+          type: "uint256",
         },
       ],
       name: "getNodeDetails",
       outputs: [
         {
-          internalType: "uint256",
-          name: "nodeId",
-          type: "uint256",
+          internalType: "address",
+          name: "nodeAddress",
+          type: "address",
         },
         {
           internalType: "uint256",
@@ -1050,24 +975,6 @@ const data = {
       type: "function",
     },
     {
-      inputs: [
-        {
-          internalType: "uint256",
-          name: "requestId",
-          type: "uint256",
-        },
-        {
-          internalType: "uint256[]",
-          name: "randomWords",
-          type: "uint256[]",
-        },
-      ],
-      name: "rawFulfillRandomWords",
-      outputs: [],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
       inputs: [],
       name: "registerNode",
       outputs: [
@@ -1082,26 +989,7 @@ const data = {
     },
     {
       inputs: [],
-      name: "s_vrfCoordinator",
-      outputs: [
-        {
-          internalType: "contract IVRFCoordinatorV2Plus",
-          name: "",
-          type: "address",
-        },
-      ],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        {
-          internalType: "address",
-          name: "_vrfCoordinator",
-          type: "address",
-        },
-      ],
-      name: "setCoordinator",
+      name: "renounceOwnership",
       outputs: [],
       stateMutability: "nonpayable",
       type: "function",
@@ -1172,7 +1060,7 @@ const data = {
       inputs: [
         {
           internalType: "address",
-          name: "to",
+          name: "newOwner",
           type: "address",
         },
       ],
@@ -1294,6 +1182,19 @@ const data = {
           internalType: "bool",
           name: "isEncrypted",
           type: "bool",
+        },
+      ],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [],
+      name: "vrfContract",
+      outputs: [
+        {
+          internalType: "contract IVRF",
+          name: "",
+          type: "address",
         },
       ],
       stateMutability: "view",

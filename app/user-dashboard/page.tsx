@@ -9,7 +9,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/atoms/button";
@@ -20,6 +20,7 @@ import useJobNotifier from "@/hooks/use-job-notifier";
 import { useNodeBroadcast } from "@/hooks/use-node-broadcast";
 import { useUserService } from "@/hooks/use-user-service";
 import { useVisionFunctions } from "@/hooks/use-vision-functions";
+import SpeechControls from "@/components/molecules/speech-controls";
 
 type SendToCLient = {
   jobId: string;
@@ -61,11 +62,11 @@ const VideoProcessingPage = () => {
 
   const notifier = useJobNotifier(
     "0xe219E1106b441c9A8D5E12364e07EEE6e896e199",
-    "6"
+    "15",
   );
 
   const sendToNode = {
-    jobId: "6",
+    jobId: "15",
     url: url,
   };
 
@@ -73,7 +74,7 @@ const VideoProcessingPage = () => {
     broadcast(
       "0xe219E1106b441c9A8D5E12364e07EEE6e896e199",
       "CoQBMHhlMGNmMTY4Y2U2NjQzNDZjMTkzYTA5NDE0OTJkMWFkMjc4ZTA3ODE5YjlkZDNhMTliZDFjNGRiMDdhY2ZiMzAzNmZkOTI1YzE5MTQ2ZWVmNmI0ZGNmM2EwNTZhNjgwNDY3ZjY4ZDFiYmVjYmIzZDJlN2FjZmU2NWE2MTVmNzYwMzFjEJq045OdMhgB",
-      JSON.stringify(sendToNode)
+      JSON.stringify(sendToNode),
     );
   };
 
@@ -84,21 +85,21 @@ const VideoProcessingPage = () => {
   const handleUpload = useCallback(async () => {
     const uploadedUrl = await uploadFile();
     // if (uploadedUrl) {
-    //   try {
-    //     await uploadVideo(uploadedUrl, 0, encryptedJob);
-    //     toast.success("Video uploaded successfully");
-    //   } catch (error) {
-    //     toast.error("Error uploading video");
-    //   }
+    // try {
+    // await uploadVideo(uploadedUrl, 0, encryptedJob);
+    // toast.success("Video uploaded successfully");
+    // } catch (error) {
+    // toast.error("Error uploading video");
+    // }
     // } else {
-    //   toast.error("Error uploading file");
+    // toast.error("Error uploading file");
     // }
   }, [uploadFile, uploadVideo, encryptedJob]);
 
   const handleGenerateCaption = useCallback(async () => {
     // if (!videoId) {
-    //   toast.error("No video uploaded");
-    //   return;
+    // toast.error("No video uploaded");
+    // return;
     // }
     try {
       handleBroadcast();
@@ -125,7 +126,7 @@ const VideoProcessingPage = () => {
         toast.error(`Error: ${successMessage.toLowerCase()}`);
       }
     },
-    [jobId]
+    [jobId],
   );
 
   useEffect(() => {
@@ -135,7 +136,7 @@ const VideoProcessingPage = () => {
         const now = Date.now();
         const elapsed = Math.floor((now - startTime) / 1000);
         setElapsedTime(
-          `${Math.floor(elapsed / 60)}:${(elapsed % 60).toString().padStart(2, "0")}`
+          `${Math.floor(elapsed / 60)}:${(elapsed % 60).toString().padStart(2, "0")}`,
         );
       }, 1000);
     }
@@ -154,11 +155,11 @@ const VideoProcessingPage = () => {
 
             if (messageHistory && messageHistory.length > 0) {
               const assistantReply = messageHistory.find(
-                (msg) => msg.role === "assistant"
+                (msg) => msg.role === "assistant",
               );
               if (assistantReply && assistantReply.content) {
                 const textContent = assistantReply.content.find(
-                  (c) => c.contentType === "text"
+                  (c) => c.contentType === "text",
                 );
                 if (textContent) {
                   setSummary(textContent.value);
@@ -178,6 +179,23 @@ const VideoProcessingPage = () => {
 
     fetchSummary();
   }, [captionGenerated, notifier.latestMessage?.chatId, getMessageHistory]);
+
+  const parsedSummary = useMemo(() => {
+    try {
+      const parsed = JSON.parse(summary);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      } else {
+        return [summary];
+      }
+    } catch (error) {
+      if (summary.trim() === "") {
+        return ["Error: Empty summary"];
+      } else {
+        return [summary];
+      }
+    }
+  }, [summary]);
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
@@ -269,26 +287,11 @@ const VideoProcessingPage = () => {
                 </h4>
                 {summary ? (
                   <div className="space-y-4">
-                    {(() => {
-                      try {
-                        const parsedSummary = JSON.parse(summary);
-                        if (Array.isArray(parsedSummary)) {
-                          return parsedSummary.map(
-                            (paragraph: string, index: number) => (
-                              <p key={index}>{paragraph}</p>
-                            )
-                          );
-                        } else {
-                          return <p>{summary}</p>;
-                        }
-                      } catch (error) {
-                        if (summary.trim() === "") {
-                          return <p>Error: Empty summary</p>;
-                        } else {
-                          return <p>{summary}</p>;
-                        }
-                      }
-                    })()}
+                    {parsedSummary.map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+
+                    <SpeechControls text={parsedSummary.join(" ")} />
                   </div>
                 ) : (
                   <p>Generating summary...</p>
