@@ -26,7 +26,7 @@ export function useNodeService() {
   const { writeContract: writeDistributeRewards } = useWriteContract();
   const { writeContract: writeWithdrawRewards } = useWriteContract();
 
-  const { data: nodeJobs, refetch: refetchNodeJobs } = useReadContract({
+  const { refetch: refetchNodeJobs } = useReadContract({
     address: CORE_ADDRESS,
     abi: CORE_ABI,
     functionName: "getNodeJobs",
@@ -36,23 +36,33 @@ export function useNodeService() {
     },
   });
 
-  const { data: nodeDetails, refetch: refetchNodeDetails } = useReadContract({
+  const { refetch: refetchNodeDetails } = useReadContract({
     address: CORE_ADDRESS,
     abi: CORE_ABI,
     functionName: "getNodeDetails",
-    args: [address!],
+    args: [nodeId!],
     query: {
-      enabled: !!address,
+      enabled: !!nodeId,
     },
   });
 
-  const { data: jobDetails, refetch: refetchJobDetails } = useReadContract({
+  const { refetch: refetchJobDetails } = useReadContract({
     address: CORE_ADDRESS,
     abi: CORE_ABI,
     functionName: "getJobDetails",
     args: [selectedJobId!],
     query: {
       enabled: !!selectedJobId,
+    },
+  });
+
+  const { refetch: refetchNodeIdFromAddress } = useReadContract({
+    address: CORE_ADDRESS,
+    abi: CORE_ABI,
+    functionName: "nodesThroughAddress",
+    args: [address!],
+    query: {
+      enabled: !!address,
     },
   });
 
@@ -265,59 +275,62 @@ export function useNodeService() {
   const getNodeJobs = useCallback(
     async (id: bigint): Promise<bigint[]> => {
       setNodeId(id);
-      await refetchNodeJobs();
-      return (nodeJobs || []) as bigint[];
+      const result = await refetchNodeJobs();
+      return (result.data || []) as bigint[];
     },
-    [refetchNodeJobs, nodeJobs]
+    [refetchNodeJobs]
   );
 
-  const getNodeDetails = useCallback(
-    async (
-      nodeAddress: Address
-    ): Promise<{
-      nodeId: bigint;
-      stake: bigint;
-      isActive: boolean;
-      isTrusted: boolean;
-      totalJobsCompleted: bigint;
-      reputation: bigint;
-    } | null> => {
-      await refetchNodeDetails();
-      if (nodeDetails) {
-        return {
-          nodeId: nodeDetails[0],
-          stake: nodeDetails[1],
-          isActive: nodeDetails[2],
-          isTrusted: nodeDetails[3],
-          totalJobsCompleted: nodeDetails[4],
-          reputation: nodeDetails[5],
-        };
-      }
-      return null;
-    },
-    [refetchNodeDetails, nodeDetails]
-  );
+  const getNodeDetails = useCallback(async (): Promise<{
+    address: Address;
+    stake: bigint;
+    isActive: boolean;
+    isTrusted: boolean;
+    totalJobsCompleted: bigint;
+    reputation: bigint;
+  } | null> => {
+    const result = await refetchNodeDetails();
+    if (result.data) {
+      return {
+        address: result.data[0],
+        stake: result.data[1],
+        isActive: result.data[2],
+        isTrusted: result.data[3],
+        totalJobsCompleted: result.data[4],
+        reputation: result.data[5],
+      };
+    }
+    return null;
+  }, [refetchNodeDetails]);
 
   const getJobDetails = useCallback(
     async (jobId: bigint) => {
       setSelectedJobId(jobId);
-      await refetchJobDetails();
-      if (jobDetails) {
+      const result = await refetchJobDetails();
+      if (result.data) {
         return {
-          videoId: jobDetails.videoId,
-          requester: jobDetails.requester,
-          nodeId: jobDetails.nodeId,
-          status: jobDetails.status,
-          jobType: jobDetails.jobType,
-          creationTime: jobDetails.creationTime,
-          resultIpfsHash: jobDetails.resultIpfsHash,
-          price: jobDetails.price,
+          videoId: result.data.videoId,
+          requester: result.data.requester,
+          nodeId: result.data.nodeId,
+          status: result.data.status,
+          jobType: result.data.jobType,
+          creationTime: result.data.creationTime,
+          resultIpfsHash: result.data.resultIpfsHash,
+          price: result.data.price,
         };
       }
       return null;
     },
-    [refetchJobDetails, jobDetails]
+    [refetchJobDetails]
   );
+
+  const getNodeIdFromAddress = useCallback(async (): Promise<bigint | null> => {
+    const result = await refetchNodeIdFromAddress();
+    if (result.data) {
+      return BigInt(result.data);
+    }
+    return null;
+  }, [refetchNodeIdFromAddress]);
 
   return {
     registerNode,
@@ -325,6 +338,7 @@ export function useNodeService() {
     getNodeJobs,
     getNodeDetails,
     getJobDetails,
+    getNodeIdFromAddress,
     submitJobResult,
     distributeRewards,
     withdrawRewards,

@@ -1,24 +1,16 @@
 // WAGMI Libraries
+import { defineChain } from "viem";
+import { createConfig, http } from "wagmi";
 import {
-  WagmiProvider,
-  createConfig,
-  http,
-  useAccount,
-  useConnect,
-  useDisconnect,
-} from "wagmi";
-import { coinbaseWallet, walletConnect } from "wagmi/connectors";
-import {
-  sepolia,
+  Chain,
+  anvil,
+  hederaTestnet,
   mainnet,
   polygon,
-  Chain,
   rootstockTestnet,
-  hederaTestnet,
+  sepolia,
 } from "wagmi/chains";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Web3AuthConnectorInstance from "../../web3auth/config";
-import { defineChain } from "viem";
 
 const kintoChain: Chain = {
   id: 5600, // Replace with actual Kinto chain ID
@@ -38,7 +30,7 @@ const kintoChain: Chain = {
   testnet: true, // Set to false if it's mainnet
 };
 
-const galadriel = defineChain({
+export const galadriel = defineChain({
   id: 696969,
   name: "Galadriel",
   nativeCurrency: {
@@ -62,23 +54,26 @@ const galadriel = defineChain({
 
 export const config = createConfig({
   chains: [
-    mainnet,
     sepolia,
+    anvil,
+    mainnet,
     polygon,
     rootstockTestnet,
     hederaTestnet,
     galadriel,
   ],
   transports: {
-    [galadriel.id]: http(),
+    [anvil.id]: http(),
     [mainnet.id]: http(),
     [sepolia.id]: http(),
     [polygon.id]: http(),
     [rootstockTestnet.id]: http(),
     [hederaTestnet.id]: http(),
+    [galadriel.id]: http(),
   },
   connectors: [
     Web3AuthConnectorInstance([
+      anvil,
       mainnet,
       sepolia,
       polygon,

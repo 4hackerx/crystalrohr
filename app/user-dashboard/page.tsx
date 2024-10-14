@@ -9,26 +9,34 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/atoms/button";
-import ProgressStripe from "@/components/atoms/progress-stripe";
 import VideoPlayer from "@/components/molecules/video-player";
 import { XMTPConnect } from "@/components/molecules/xmtp-connect";
 import useFileUpload from "@/hooks/use-file-upload";
 import useJobNotifier from "@/hooks/use-job-notifier";
+import { useNodeBroadcast } from "@/hooks/use-node-broadcast";
 import { useUserService } from "@/hooks/use-user-service";
+import { useVisionFunctions } from "@/hooks/use-vision-functions";
+import SpeechControls from "@/components/molecules/speech-controls";
 
-type CaptionDetails = {
-  totalWords: number;
-  audioLength: string;
-  totalScenes: number;
+type SendToCLient = {
+  jobId: string;
+  chatId: number | null;
+  capturedScenes: Record<number, string>;
+  processStatus: string;
 };
 
 const VideoProcessingPage = () => {
   const [encryptedJob, setEncryptedJob] = useState(false);
   const [nodeAddress, setNodeAddress] = useState("");
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState("00:00");
+  const [captionGenerated, setCaptionGenerated] = useState(false);
+  const [captionText, setCaptionText] = useState<string[]>([]);
+  const [summary, setSummary] = useState<string>("");
 
   const { file, setFile, url, setUrl, uploading, uploadFile, handleChange } =
     useFileUpload();
@@ -46,37 +54,64 @@ const VideoProcessingPage = () => {
     setJobId,
   } = useUserService();
 
-  const notifier = useJobNotifier(nodeAddress, Number(jobId).toString());
+  const {
+    broadcast,
+    isLoading: isBroadcasting,
+    error: broadcastError,
+  } = useNodeBroadcast();
+
+  const notifier = useJobNotifier(
+    "0xe219E1106b441c9A8D5E12364e07EEE6e896e199",
+    "15",
+  );
+
+  const sendToNode = {
+    jobId: "15",
+    url: url,
+  };
+
+  const handleBroadcast = () => {
+    broadcast(
+      "0xe219E1106b441c9A8D5E12364e07EEE6e896e199",
+      "CoQBMHhlMGNmMTY4Y2U2NjQzNDZjMTkzYTA5NDE0OTJkMWFkMjc4ZTA3ODE5YjlkZDNhMTliZDFjNGRiMDdhY2ZiMzAzNmZkOTI1YzE5MTQ2ZWVmNmI0ZGNmM2EwNTZhNjgwNDY3ZjY4ZDFiYmVjYmIzZDJlN2FjZmU2NWE2MTVmNzYwMzFjEJq045OdMhgB",
+      JSON.stringify(sendToNode),
+    );
+  };
+
+  const { getMessageHistory } = useVisionFunctions();
 
   const inputFile = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(async () => {
     const uploadedUrl = await uploadFile();
-    if (uploadedUrl) {
-      try {
-        await uploadVideo(uploadedUrl, 0, encryptedJob);
-        toast.success("Video uploaded successfully");
-      } catch (error) {
-        toast.error("Error uploading video");
-      }
-    } else {
-      toast.error("Error uploading file");
-    }
+    // if (uploadedUrl) {
+    // try {
+    // await uploadVideo(uploadedUrl, 0, encryptedJob);
+    // toast.success("Video uploaded successfully");
+    // } catch (error) {
+    // toast.error("Error uploading video");
+    // }
+    // } else {
+    // toast.error("Error uploading file");
+    // }
   }, [uploadFile, uploadVideo, encryptedJob]);
 
   const handleGenerateCaption = useCallback(async () => {
-    if (!videoId) {
-      toast.error("No video uploaded");
-      return;
-    }
+    // if (!videoId) {
+    // toast.error("No video uploaded");
+    // return;
+    // }
     try {
-      const newJobId = await createJob(videoId, encryptedJob ? 1 : 0);
-      setJobId(newJobId.jobId);
+      handleBroadcast();
+      setStartTime(Date.now());
+      // const newJobId = await createJob(videoId, encryptedJob ? 1 : 0);
+      // setJobId(newJobId.jobId);
       toast.success("Caption generation job created");
+      setCaptionGenerated(true);
     } catch (error) {
       toast.error("Error creating caption generation job");
     }
-  }, [videoId, createJob, setJobId, encryptedJob]);
+  }, [videoId, createJob, setJobId, encryptedJob, handleBroadcast]);
 
   const handleJobAction = useCallback(
     async (action: () => Promise<any>, successMessage: string) => {
@@ -91,8 +126,76 @@ const VideoProcessingPage = () => {
         toast.error(`Error: ${successMessage.toLowerCase()}`);
       }
     },
-    [jobId]
+    [jobId],
   );
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (startTime) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        setElapsedTime(
+          `${Math.floor(elapsed / 60)}:${(elapsed % 60).toString().padStart(2, "0")}`,
+        );
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      if (captionGenerated && notifier.latestMessage) {
+        try {
+          const sendToClient = notifier.latestMessage as SendToCLient;
+          const chatId = sendToClient.chatId;
+
+          if (chatId !== null) {
+            const messageHistory = await getMessageHistory(chatId);
+
+            if (messageHistory && messageHistory.length > 0) {
+              const assistantReply = messageHistory.find(
+                (msg) => msg.role === "assistant",
+              );
+              if (assistantReply && assistantReply.content) {
+                const textContent = assistantReply.content.find(
+                  (c) => c.contentType === "text",
+                );
+                if (textContent) {
+                  setSummary(textContent.value);
+                  return;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching summary:", error);
+        }
+      }
+
+      // If we haven't returned by now, schedule another attempt
+      setTimeout(fetchSummary, 2000);
+    };
+
+    fetchSummary();
+  }, [captionGenerated, notifier.latestMessage?.chatId, getMessageHistory]);
+
+  const parsedSummary = useMemo(() => {
+    try {
+      const parsed = JSON.parse(summary);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      } else {
+        return [summary];
+      }
+    } catch (error) {
+      if (summary.trim() === "") {
+        return ["Error: Empty summary"];
+      } else {
+        return [summary];
+      }
+    }
+  }, [summary]);
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
@@ -109,7 +212,6 @@ const VideoProcessingPage = () => {
           <h2 className="text-2xl font-semibold mb-6 flex items-center">
             <Upload className="mr-2" /> Upload Your Video
           </h2>
-
           {!file ? (
             <div className="bg-black bg-opacity-30 rounded-xl p-6">
               <label
@@ -154,31 +256,49 @@ const VideoProcessingPage = () => {
               )}
             </div>
           )}
-
           {uploading && <p className="mt-6">Uploading...</p>}
-
           {url && <VideoPlayer url={url} />}
-
           {!url && (
-            <>
-              <Button
-                disabled={!file || uploading}
-                onClick={handleUpload}
-                className="w-full bg-[#1f0a4f] transition-colors duration-300 mt-8 hover:bg-[#360C99]"
-              >
-                Upload Video <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-              <Button
-                disabled={!file || uploading}
-                onClick={handleGenerateCaption}
-                className="w-full bg-[#1f0a4f] transition-colors duration-300 mt-4 hover:bg-[#360C99]"
-              >
-                Generate Caption <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            </>
+            <Button
+              disabled={!file || uploading}
+              onClick={handleUpload}
+              className="w-full bg-[#1f0a4f] transition-colors duration-300 mt-8 hover:bg-[#360C99]"
+            >
+              Upload Video <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
           )}
+          <Button
+            disabled={!file || uploading}
+            onClick={handleGenerateCaption}
+            className="w-full bg-[#1f0a4f] transition-colors duration-300 mt-4 hover:bg-[#360C99]"
+          >
+            Generate Caption <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
 
-          {url && <ProgressStripe percentage={100} color="purple" />}
+          {/* Caption Generation Progress and Results */}
+          {captionGenerated && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4">
+                Caption Generation Progress
+              </h3>
+              <div className="mt-6">
+                <h4 className="text-lg font-semibold mb-2">
+                  Generated Summary:
+                </h4>
+                {summary ? (
+                  <div className="space-y-4">
+                    {parsedSummary.map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+
+                    <SpeechControls text={parsedSummary.join(" ")} />
+                  </div>
+                ) : (
+                  <p>Generating summary...</p>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Video Details Section */}
@@ -189,10 +309,22 @@ const VideoProcessingPage = () => {
               {
                 icon: Play,
                 label: "Process Action",
-                value: notifier.latestMessage,
-              }, // TODO:
-              { icon: Clock, label: "Process Time", value: 0 }, // TODO:
-              { icon: Layers, label: "Computed Scenes", value: 0 }, // TODO:
+                value: notifier.latestMessage
+                  ? notifier.latestMessage?.processStatus
+                  : "N/A",
+              },
+              {
+                icon: Clock,
+                label: "Process Time",
+                value: elapsedTime,
+              },
+              {
+                icon: Layers,
+                label: "Computed Scenes",
+                value: notifier.latestMessage?.capturedScenes
+                  ? Object.keys(notifier.latestMessage?.capturedScenes).length
+                  : 0,
+              },
             ].map(({ icon: Icon, label, value }) => (
               <div
                 key={label}
@@ -206,10 +338,11 @@ const VideoProcessingPage = () => {
               </div>
             ))}
           </div>
+
           {[
             { label: "Get Job Status", action: () => getJobStatus(jobId!) },
             { label: "Cancel Job", action: () => cancelJob(jobId!) },
-            { label: "Create Dispute", action: () => createDispute(jobId!) },
+            // { label: "Create Dispute", action: () => createDispute(jobId!) },
             { label: "Get Job Details", action: () => getJobDetails(jobId!) },
             { label: "Get User Jobs", action: getUserJobs },
           ].map(({ label, action }) => (

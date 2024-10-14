@@ -163,7 +163,7 @@ const useCaptureStills = () => {
 
   const processUploadQueue = useCallback(async () => {
     const now = Date.now();
-    if (now - lastUploadTimeRef.current < 5000) {
+    if (now - lastUploadTimeRef.current < 1500) {
       return; // Wait at least 5 seconds between uploads
     }
 
