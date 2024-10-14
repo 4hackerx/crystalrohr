@@ -1,10 +1,52 @@
-# Crystalrohr
+Here's a README file for your project based on the flow diagram you provided:
 
-Decentralized Video Captioning Protocol Flow
+---
 
-### User Journey Flow
+[Demo](https://vimeo.com/1007550172?share=copy)
 
-This represents the general flow of what the user should interact with and how the user experience should feel
+# Project Name: Video Auto Caption Service with DePIN Network Participation
+
+## Overview
+
+This project provides a comprehensive platform for users to auto-generate captions for their videos and participate in a decentralized physical infrastructure network (DePIN) to earn tokens. The application offers seamless wallet integration, token management, and account management, making it easy for users to upload, process, and share videos with captions, as well as contribute resources to the network.
+
+## Table of Contents
+
+- [Features](#features)
+- [Flow Diagram](#flow-diagram)
+- [Sponsors Used](#Sponsors-used)
+- [Blockchains Used](#Blockchains-used)
+- [Installation](#installation)
+- [Usage](#usage)
+
+
+## Features
+
+### Video Auto Caption Service
+
+- **User Authentication**: Secure login and wallet connection.
+- **Onboarding**: Guided onboarding process for new users.
+- **Video Upload**: Users can upload videos to generate captions automatically.
+- **Progress Tracking**: Real-time progress bar during the captioning process.
+- **Caption Review**: Users can review and edit auto-generated captions.
+- **Download and Share**: Download captioned videos and share them easily.
+
+### DePIN Network Participation
+
+- **Staking and Contribution**: Stake tokens and contribute resources to earn tokens.
+- **Earnings Dashboard**: Track earnings and contribution statistics.
+
+### Token Management
+
+- **Token Balance**: View and manage token balances.
+- **Purchases and Withdrawals**: Purchase more tokens, set auto-recharge, and withdraw tokens.
+
+### Account Management
+
+- **Profile Updates**: Update personal information and manage profile settings.
+
+
+## Flow Diagram
 
 ```mermaid
 graph TD
@@ -53,61 +95,46 @@ graph TD
     AI --> AJ[User manages subscriptions]
 ```
 
-### Decentralized Video Captioning Flow
+## Sponsors Used
 
-The system outlines a decentralized video captioning service using multiple blockchains, allowing secure processing and efficient caption generation through specialized node selection and blockchain interactions.
+- **Web3Auth**: Used Web3auth as primary mode of authentication
+- **Chainlink**: Used Chainlink's VRF to randomly select nodes
+- **XMTP**: Using XMTP suscriber sdk for notifications
+- **Sign Protocol**: Used sign protocol to generate attestations for the captioned video
 
-```mermaid
-graph TD
-    subgraph "Client Side"
-        A[User Authenticates] --> B[Initiates Captioning with Regular/Encrypted Job]
-        B --> C[Upload Video to IPFS]
-        C --> D[Get IPFS Link]
-        D --> E[User Selects Primary Blockchain]
-    end
+## Blockchains Used
+- **Ethereum Sepolia Testnet**
+- **Rootstock Testnet**
+- **Hedera Testnet**
+- **Morph Testnet**
+- **Kinto Holesky**
 
-    subgraph "Protocol Side"
-        E --> I[Contract Receives Request]
-        I --> J[VRF Service]
-        J --> K[Weighted Random Algorithm]
-        K --> L{Encrypted Job?}
-        L -->|No| N[Proceed with Regular Job]
+## Installation
 
-        L -->|Yes| M[Use Lit Protocol for Encryption]
-        M --> O[Select from Trusted Nodes]
-        N --> P[Select from All Nodes]
-        O --> Q[Assign Video Processing Task]
-        P --> Q
-        Q --> R[Node Processes Video]
-        R --> S[Node Extracts Video Stills]
-        S --> T[Node Sends Stills to Galadriel Blockchain]
-        T --> U[Galadriel Processes Video Stills]
-        U --> V[Vision Model Generates Captions]
-        V --> W[Node Retrieves Captions from Galadriel]
-        W --> X[Node Compiles Final Captioned Video]
-        X --> Y[Attestation of Correctness]
-        Y --> Z[Validate Result]
-        Z --> AA[Update User Balance]
-        AA --> AB[Reward Computing Nodes]
-    end
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/project-name.git
+   ```
+2. Install dependencies:
+   ```bash
+   cd project-name
+   npm install
+   ```
+3. Set up environment variables:
+   - Create a `.env` file in the root directory.
+   - Add the necessary environment variables as per `.env.example`.
 
-    subgraph "External Services"
-        AC[IPFS]
-        AD[Primary Blockchain Networks]
-        AE[Galadriel Blockchain]
-        AG[VRF Service]
-        AH[Lit Protocol]
-        AI[Web3Auth]
-        AJ[Attestation protocol]
-    end
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-    A --> AI
-    B --> AH
-    C --> AC
-    E --> AD
-    J --> AG
-    M --> AH
-    T --> AE
-    W --> AE
-    Y --> AJ
-```
+## Usage
+
+1. Visit the website and log in using your credentials.
+2. Connect your wallet to access the dashboard.
+3. For new users, complete the onboarding process.
+4. Upload a video to auto-generate captions, review, and edit as needed.
+5. Participate in the DePIN network by staking tokens and contributing resources.
+6. Manage tokens, account details, and view captioning history through the dashboard.
+

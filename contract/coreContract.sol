@@ -88,9 +88,9 @@ contract CoreContract is ReentrancyGuard,Ownable {
     ) Ownable(msg.sender){
         vrfContract = IVRF(_vrfContractAddress);
         tokenContract = IERC20(_tokenAddress);
-        jobPrice = 100 * 10**18; // 100 tokens
+        jobPrice = 10 * 10**18; // 10 tokens
         nodeFee = 80; // 80%
-        minStake = 1000 * 10**18; // 1000 tokens
+        minStake = 10 * 10**18; // 10 tokens
     }
 
     function uploadVideo(string calldata _ipfsHash, uint256 _duration, bool _isEncrypted) external returns (uint256 videoId) {
